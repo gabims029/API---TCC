@@ -15,6 +15,7 @@ router.delete("/user/:id", verifyJWT, userController.deleteUser);
 //salas
 router.post("/sala/", verifyJWT, salaController.createSala);
 router.get("/sala/", verifyJWT, salaController.getAllSalas);
+router.get("/sala/:bloco", salaController.getSalaByBloco);
 router.get("/sala/:numero", verifyJWT, salaController.getSalaById);
 router.put("/sala/", verifyJWT, salaController.updateSala);
 router.delete("/sala/:numero", verifyJWT, salaController.deleteSala);

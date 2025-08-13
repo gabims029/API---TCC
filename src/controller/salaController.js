@@ -86,6 +86,34 @@ module.exports = class salaController {
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
+  static async getSalaByBloco(req, res) {
+  const bloco = req.params.bloco;
+
+  try {
+    const query = "SELECT * FROM sala WHERE bloco = ?";
+    connect.query(query, [bloco], function (err, result) {
+      if (err) {
+        console.error("Erro ao obter salas:", err);
+        return res.status(500).json({ error: "Erro interno do servidor" });
+      }
+
+      if (result.length === 0) {
+        return res.status(404).json({ error: "Salas não encontradas" });
+      }
+
+      console.log("Salas obtidas com sucesso");
+      res.status(200).json({
+        message: "Obtendo as salas do bloco: " + bloco,
+        salas: result,
+      });
+    });
+  } catch (error) {
+    console.error("Erro ao executar a consulta:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
+
+
 
   static async updateSala(req, res) {
     const { numero, descricao, capacidade, bloco } = req.body;
