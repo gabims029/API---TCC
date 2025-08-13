@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const userController = require("../controller/userController");
-// const classroomController = require("../controller/classroomController");
+const salaController = require("../controller/salaController");
 // const controllerReserva = require("../controller/controllerReserva");
 const verifyJWT = require("../services/verifyJWT");
 
@@ -12,12 +12,12 @@ router.get("/user/:id", verifyJWT, userController.getUserById);
 router.put("/user/", verifyJWT, userController.updateUser); 
 router.delete("/user/:id", verifyJWT, userController.deleteUser); 
 
-//Classroom
-// router.post("/sala/", verifyJWT, classroomController.createClassroom);
-// router.get("/sala/", verifyJWT, classroomController.getAllClassrooms);
-// router.get("/sala/:numero", verifyJWT, classroomController.getClassroomById);
-// router.put("/sala/", verifyJWT, classroomController.updateClassroom);
-// router.delete("/sala/:numero", verifyJWT, classroomController.deleteClassroom);
+//salas
+router.post("/sala/", verifyJWT, salaController.createSala);
+router.get("/sala/", verifyJWT, salaController.getAllSalas);
+router.get("/sala/:numero", verifyJWT, salaController.getSalaById);
+router.put("/sala/", verifyJWT, salaController.updateSala);
+router.delete("/sala/:numero", verifyJWT, salaController.deleteSala);
 
 // // Reservas
 // router.post("/reserva/",verifyJWT, controllerReserva.createReserva);

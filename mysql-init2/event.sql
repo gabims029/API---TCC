@@ -7,3 +7,4 @@ do
     delete from reserva
     where data < now() - interval 6 month;
 
+ 

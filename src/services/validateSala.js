@@ -1,9 +1,10 @@
-module.exports = function validateClassroom({
+module.exports = function validateSala({
     numero,
     descricao,
     capacidade,
+    bloco
   }) {
-    if (!numero || !descricao || !capacidade) {
+    if (!numero || !descricao || !capacidade || !bloco) {
       return { error: "Todos os campos devem ser preenchidos" };
     }
   
