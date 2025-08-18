@@ -1,3 +1,5 @@
+CREATE DATABASE  IF NOT EXISTS `senai` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `senai`;
 -- MySQL dump 10.13  Distrib 8.0.36, for Win64 (x86_64)
 --
 -- Host: localhost    Database: senai
@@ -27,7 +29,7 @@ CREATE TABLE `periodo` (
   `horario_inicio` time NOT NULL,
   `horario_fim` time NOT NULL,
   PRIMARY KEY (`id_periodo`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -36,6 +38,7 @@ CREATE TABLE `periodo` (
 
 LOCK TABLES `periodo` WRITE;
 /*!40000 ALTER TABLE `periodo` DISABLE KEYS */;
+INSERT INTO `periodo` VALUES (1,'07:30:00','08:30:00'),(2,'08:30:00','09:30:00'),(3,'09:30:00','10:30:00'),(4,'10:30:00','11:30:00'),(5,'11:30:00','12:30:00'),(6,'12:30:00','13:30:00'),(7,'13:30:00','14:30:00'),(8,'14:30:00','15:30:00'),(9,'10:30:00','11:30:00'),(10,'11:30:00','12:30:00'),(11,'12:30:00','13:30:00'),(12,'13:30:00','14:30:00'),(13,'14:30:00','15:30:00'),(14,'15:30:00','16:30:00'),(15,'16:30:00','17:30:00'),(16,'17:30:00','18:30:00'),(17,'18:30:00','19:30:00'),(18,'19:30:00','20:30:00'),(19,'20:30:00','21:30:00'),(20,'21:30:00','22:30:00');
 /*!40000 ALTER TABLE `periodo` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -85,9 +88,9 @@ CREATE TABLE `sala` (
   `numero` char(5) NOT NULL,
   `descricao` varchar(255) DEFAULT NULL,
   `capacidade` int NOT NULL,
-  `bloco` char(1) NOT NULL,
+  `bloco` varchar(255) NOT NULL,
   PRIMARY KEY (`id_sala`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -96,6 +99,7 @@ CREATE TABLE `sala` (
 
 LOCK TABLES `sala` WRITE;
 /*!40000 ALTER TABLE `sala` DISABLE KEYS */;
+INSERT INTO `sala` VALUES (1,'A1','CONVERSORES',16,'A'),(2,'A2','ELETRÔNICA',16,'A'),(3,'A3','CLP',16,'B'),(4,'A4','AUTOMAÇÃO',20,'A'),(5,'A5','METROLOGIA',16,'A'),(6,'A6','PNEUMÁTICA/HIDRÁULICA',20,'A'),(7,'COEL','OFICINA DE COMANDOS ELÉTRICOS',16,'A'),(8,'ITEL1','OFICINA DE INSTALAÇÕES ELÉTRICAS - G1',16,'A'),(9,'ITEL2','OFICINA DE INSTALAÇÕES ELÉTRICAS - G2',16,'A'),(10,'TOR','OFICINA DE TORNEARIA',20,'A'),(11,'AJFR','OFICINA DE AJUSTAGEM/FRESAGEM',16,'A'),(12,'CNC','OFICINA DE CNC',16,'A'),(13,'MMC','OFICINA DE MANUTENÇÃO MECÂNICA',16,'A'),(14,'SOLD','OFICINA DE SOLDAGEM',16,'A'),(15,'B2','SALA DE AULA',32,'B'),(16,'B3','SALA DE AULA',32,'B'),(17,'B5','SALA DE AULA',40,'B'),(18,'B6','SALA DE AULA',32,'B'),(19,'B7','SALA DE AULA',32,'B'),(20,'B8','LAB. INFORMÁTICA',20,'B'),(21,'B9','LAB. INFORMÁTICA',16,'B'),(22,'B10','LAB. INFORMÁTICA',16,'B'),(23,'B11','LAB. INFORMÁTICA',40,'B'),(24,'B12','LAB. INFORMÁTICA',40,'B'),(25,'ALI','LAB. ALIMENTOS',16,'Salão Social'),(26,'C1','SALA DE AULA',24,'C'),(27,'C2','LAB. DE INFORMÁTICA',32,'C'),(28,'C3','SALA DE MODELAGEM VESTUÁRIO',20,'C'),(29,'C4','SALA DE MODELAGEM VESTUÁRIO',20,'C'),(30,'C5','SALA DE AULA',16,'C'),(31,'VEST','OFICINA DE VESTUÁRIO',20,'C'),(32,'MPESP','OFICINA DE MANUTENÇÃO PESPONTO',16,'C'),(33,'AUTO','OFICINA DE MANUTENÇÃO AUTOMOTIVA',20,'C'),(34,'D1','SALA MODELAGEM',16,'D'),(35,'D2','SALA DE MODELAGEM',20,'D'),(36,'D3','SALA DE AULA',16,'D'),(37,'D4','SALA DE CRIAÇÃO',18,'D'),(38,'CORT1','OFICINA DE CORTE - G1',16,'D'),(39,'CORT2','OFICINA DE CORTE - G2',16,'D'),(40,'PRE','OFICINA DE PREPARAÇÃO',16,'D'),(41,'PESP1','OFICINA DE PESPONTO - G1',16,'D'),(42,'PESP2','OFICINA DE PESPONTO - G2',16,'D'),(43,'PESP3','OFICINA DE PESPONTO - G3',16,'D'),(44,'MONT1','OFICINA DE MONTAGEM - G1',16,'D'),(45,'MONT2','OFICINA DE MONTAGEM - G2',16,'D');
 /*!40000 ALTER TABLE `sala` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -110,13 +114,13 @@ CREATE TABLE `user` (
   `id_user` int NOT NULL AUTO_INCREMENT,
   `nome` varchar(50) NOT NULL,
   `email` varchar(50) NOT NULL,
-  `senha` varchar(50) NOT NULL,
+  `senha` varchar(255) NOT NULL,
   `cpf` varchar(50) NOT NULL,
   `tipo` varchar(255) NOT NULL,
   PRIMARY KEY (`id_user`),
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `cpf` (`cpf`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -125,6 +129,7 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
+INSERT INTO `user` VALUES (1,'Administrador','admin@docente.com','$2b$10$cUCNfB8zeLxEfopVSyBtIOhmUR6vtZrvIMShv.VNHqKWmiE1.AaoK','12345678902','Admin');
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -145,4 +150,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-08-13  8:55:45
+-- Dump completed on 2025-08-18 15:35:12
