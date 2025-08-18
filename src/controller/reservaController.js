@@ -55,23 +55,23 @@ module.exports = class ControllerReserva {
         `
         SELECT id_reserva FROM reserva
         WHERE fk_id_sala = ? AND data = ? AND (
-          (horarioInicio < ? AND horarioFim > ?) OR
-          (horarioInicio < ? AND horarioFim > ?) OR
-          (horarioInicio >= ? AND horarioInicio < ?) OR
-          (horarioFim > ? AND horarioFim <= ?)
+          (dataInicio < ? AND dataFim > ?) OR
+          (dataInicio < ? AND dataFim > ?) OR
+          (dataInicio >= ? AND dataInicio < ?) OR
+          (dataFim > ? AND dataFim <= ?)
         )
       `,
         [
           fk_id_sala,
           data,
-          horarioInicio,
-          horarioInicio,
-          horarioInicio,
-          horarioFim,
-          horarioInicio,
-          horarioFim,
-          horarioInicio,
-          horarioFim,
+          dataInicio,
+          dataInicio,
+          dataInicio,
+          dataFim,
+          dataInicio,
+          dataFim,
+          dataInicio,
+          dataFim,
         ]
       );
 
@@ -82,10 +82,10 @@ module.exports = class ControllerReserva {
       }
 
       const query = `
-        INSERT INTO reserva (fk_id_usuario, fk_id_sala, data, horarioInicio, horarioFim)
+        INSERT INTO reserva (fk_id_usuario, fk_id_sala, data, dataInicio, dataFim)
         VALUES (?, ?, ?, ?, ?)
       `;
-      const values = [id_usuario, fk_id_sala, data, horarioInicio, horarioFim];
+      const values = [id_usuario, fk_id_sala, data, dataInicio, dataFim];
 
       const result = await queryAsync(query, values);
 
@@ -101,15 +101,15 @@ module.exports = class ControllerReserva {
 
   //Update Reserva
   static async updateReserva(req, res) {
-    const { data, horarioInicio, horarioFim } = req.body;
+    const { data, dataInicio, dataFim } = req.body;
     const reservaId = req.params.id_reserva;
 
     const validation = validateReserva({
       fk_id_usuario: 1,
       fk_id_sala: 1,
       data,
-      horarioInicio,
-      horarioFim,
+      dataInicio,
+      dataFim,
     });
 
     if (validation) {
@@ -132,24 +132,24 @@ module.exports = class ControllerReserva {
         `
         SELECT id_reserva FROM reserva
         WHERE fk_id_sala = ? AND data = ? AND id_reserva != ? AND (
-          (horarioInicio < ? AND horarioFim > ?) OR
-          (horarioInicio < ? AND horarioFim > ?) OR
-          (horarioInicio >= ? AND horarioInicio < ?) OR
-          (horarioFim > ? AND horarioFim <= ?)
+          (dataInicio < ? AND dataFim > ?) OR
+          (dataInicio < ? AND dataFim > ?) OR
+          (dataInicio >= ? AND dataInicio < ?) OR
+          (dataFim > ? AND dataFim <= ?)
         )
         `,
         [
           fk_id_sala,
           data,
           reservaId,
-          horarioInicio,
-          horarioInicio,
-          horarioInicio,
-          horarioFim,
-          horarioInicio,
-          horarioFim,
-          horarioInicio,
-          horarioFim,
+          dataInicio,
+          dataInicio,
+          dataInicio,
+          dataFim,
+          dataInicio,
+          dataFim,
+          dataInicio,
+          dataFim,
         ]
       );
 
@@ -162,10 +162,10 @@ module.exports = class ControllerReserva {
       await queryAsync(
         `
         UPDATE reserva 
-        SET data = ?, horarioInicio = ?, horarioFim = ?
+        SET data = ?, dataInicio = ?, dataFim = ?
         WHERE id_reserva = ?
         `,
-        [data, horarioInicio, horarioFim, reservaId]
+        [data, dataInicio, horarioFim, reservaId]
       );
 
       return res
@@ -180,7 +180,7 @@ module.exports = class ControllerReserva {
   //Get Reservas
   static async getReservas(req, res) {
     const query = `
-      SELECT r.id_reserva, r.fk_id_usuario, r.fk_id_sala, r.data, r.horarioInicio, r.horarioFim, 
+      SELECT r.id_reserva, r.fk_id_usuario, r.fk_id_sala, r.data, r.dataInicio, r.horarioFim, 
       u.nome AS nomeUsuario, s.numero AS salaNome
       FROM reserva r
       INNER JOIN usuario u ON r.fk_id_usuario = u.id_usuario
@@ -281,8 +281,8 @@ function reservaFormat(reserva) {
   }
 
   // Se o campo 'horarioInicio' for Date, extrai apenas o horário no formato HH:MM:SS
-  if (reserva.horarioInicio instanceof Date) {
-    reserva.horarioInicio = reserva.horarioInicio
+  if (reserva.dataInicio instanceof Date) {
+    reserva.horarioInicio = reserva.dataInicio
       .toISOString()
       .split("T")[1]
       .split(".")[0]; // Pega apenas a parte de horário
