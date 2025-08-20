@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const userController = require("../controller/userController");
 const salaController = require("../controller/salaController");
+const periodoController = require("../controller/periodoController");
 // const controllerReserva = require("../controller/controllerReserva");
 const verifyJWT = require("../services/verifyJWT");
 
@@ -27,6 +28,12 @@ router.delete("/sala/:numero", verifyJWT, salaController.deleteSala);
 // router.delete("/reserva/:id_reserva",verifyJWT, controllerReserva.deleteReserva);
 // router.get("/reserva/horarios/:id_sala/:data",verifyJWT, controllerReserva.getHorariosSala);
 // router.get("/reserva/usuario/:id_usuario",verifyJWT, controllerReserva.getReservasPorUsuario);
+
+router.post("/periodo/", periodoController.createPeriodo);
+router.get("/periodo/", periodoController.getAllPeriodos);
+router.get("/periodo/:id", periodoController.getPeriodoById);
+router.put("/periodo/:id", periodoController.updatePeriodo);
+router.delete("/periodo/:id", periodoController.deletePeriodo)
 
 module.exports = router;
 
