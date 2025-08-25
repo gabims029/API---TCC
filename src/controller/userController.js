@@ -202,7 +202,7 @@ module.exports = class userController {
           return res.status(401).json({ error: "Senha incorreta" });
         }
 
-        const token = jwt.sign({ id: user.id_user }, process.env.SECRET, {
+        const token = jwt.sign({ id: user.id_user,tipo: user.tipo }, process.env.SECRET, {
           expiresIn: "1h",
         });
 
