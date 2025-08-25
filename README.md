@@ -12,29 +12,21 @@ Este repositório fornece a estrutura inicial para uma API de gerenciamento de r
 
 1. Clone o repositório:
    ```sh
-   git clone https://github.com/EullerF/codigoProjetoBaseAlunos2025.git
+   git clone https://github.com/gabims029/API---TCC/tree/main
 
-2. Instale as dependências:
-   ```sh
-   npm i
+2. Crie um arquivo chamado ".env", nele você vai colar o que esta no arquivo ".env.example" e preencher com: 
+SECRET=minhachavesecreta
+DB_HOST=db
+DB_USER=root
+DB_PASSWORD=root
+DB_NAME=senai
 
-3. Crie o banco de dados. O modelo do banco de dados está disponível no arquivo mysql-init/init.sql na raiz do projeto. Certifique-se de criar o banco de dados antes de rodar o projeto.
+3. Digite no terminal o comando do Docker (Docker precisa estar intalado e aberto):
+   docker compose up --build 
 
-4. Configure a conexão com o banco de dados. No arquivo connect.js, ajuste as configurações de conexão com o seu banco de dados:
+4. No Docker, você vai no conteiner que acabou de ser criado, clique na "db-1" e na na parte "Exec"
 
-<!--
-const mysql = require('mysql2');
-
-const pool = mysql.createPool({
-  connectionLimit: 10,
-  host: 'db', // IP ou localhost
-  user: 'root', // Seu usuário do MySQL
-  password: '?', // Sua senha do MySQL
-  database: 'test' // Nome do banco de dados
-});
-
-module.exports = pool;
--->
+5. Digite o comando "mysql -u root -p" e coloque a senha: root. Digite o camando para entrar no bando de dados "use senai"
 
 ## Rotas da API
 
@@ -59,3 +51,9 @@ module.exports = pool;
 - **GET /schedule/:id**: Obtém os agendamentos de uma sala de aula específica pelo ID.
 - **GET /schedule/ranges/:id**: Obtém os agendamentos de uma sala de aula específica em intervalos de tempo.
 - **DELETE /schedule/:id**: Deleta um agendamento.
+
+### Periodo Routes
+- **POST /periodo/**: Cria um novo periodo.
+- **GET /periodo/**: Obtém todos os periodos.
+- **GET /periodo/:id**: Obtém um periodo específica pelo ID.
+- **DELETE /periodo/:id**: Deleta um agendamento.

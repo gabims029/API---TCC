@@ -21,7 +21,7 @@ module.exports = class userController {
       }
       const hashedPassword = await bcrypt.hash(senha, SALT_ROUNDS);
 
-      const query = `INSERT INTO \`User\` (cpf, senha, email, nome, tipo) VALUES (?, ?, ?, ?,?)`;
+      const query = `INSERT INTO user (cpf, senha, email, nome, tipo) VALUES (?, ?, ?, ?, ?)`;
       connect.query(query, [cpf, hashedPassword, email, nome, tipo], (err) => {
         if (err) {
           if (err.code === "ER_DUP_ENTRY") {
@@ -43,7 +43,7 @@ module.exports = class userController {
   }
 
   static async getAllUsers(req, res) {
-    const query = `SELECT * FROM \`User\``;
+    const query = `SELECT * FROM user`;
 
     try {
       connect.query(query, function (err, results) {
@@ -64,7 +64,7 @@ module.exports = class userController {
 
   static async getUserById(req, res) {
     const userId = req.params.id;
-    const query = `SELECT * FROM \`User\` WHERE id_user = ?`;
+    const query = `SELECT * FROM user WHERE id_user = ?`;
     const values = [userId];
 
     try {
@@ -114,7 +114,7 @@ module.exports = class userController {
       const hashedPassword = await bcrypt.hash(senha, SALT_ROUNDS);
 
       const query =
-        "UPDATE `User` SET cpf = ?, email = ?, senha = ?, nome = ? WHERE id_user = ?";
+        "UPDATE user SET cpf = ?, email = ?, senha = ?, nome = ? WHERE id_user = ?";
       connect.query(
         query,
         [cpf, email, hashedPassword, nome, id],
@@ -181,7 +181,7 @@ module.exports = class userController {
       return res.status(400).json({ error: "Email e senha são obrigatórios" });
     }
 
-    const query = `SELECT * FROM \`User\` WHERE email = ?`;
+    const query = `SELECT * FROM user WHERE email = ?`;
 
     try {
       connect.query(query, [email], (err, results) => {
@@ -202,7 +202,7 @@ module.exports = class userController {
           return res.status(401).json({ error: "Senha incorreta" });
         }
 
-        const token = jwt.sign({ id: user.id_user }, process.env.SECRET, {
+        const token = jwt.sign({ id: user.id_user,tipo: user.tipo }, process.env.SECRET, {
           expiresIn: "1h",
         });
 
