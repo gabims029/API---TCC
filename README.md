@@ -13,7 +13,6 @@ Este repositório fornece a estrutura inicial para uma API de gerenciamento de r
 1. Clone o repositório:
    ```sh
    git clone https://github.com/EullerF/codigoProjetoBaseAlunos2025.git
-   cd codigoProjetoBaseAlunos2025
 
 2. Instale as dependências:
    ```sh
