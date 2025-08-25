@@ -11,6 +11,7 @@ Este repositório fornece a estrutura inicial para uma API de gerenciamento de r
 ## Instalação do Projeto Base
 
 1. Clone o repositório:
+   ```sh
    git clone https://github.com/gabims029/API---TCC/tree/main
 
 2. Crie um arquivo chamado ".env", nele você vai colar o que esta no arquivo ".env.example" e preencher com: 
