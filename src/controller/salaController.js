@@ -14,34 +14,32 @@ const queryAsync = (query, values) => {
 module.exports = class salaController {
   static async createSala(req, res) {
     const { numero, descricao, capacidade, bloco } = req.body;
-    
+  
     const validationError = validateSala(req.body);
     if (validationError) {
       return res.status(400).json(validationError);
     }
-    // Caso todos os campos estejam preenchidos, realiza a inserção na tabela
-    const query = `INSERT INTO sala (numero, descricao, capacidade, bloco) VALUES ( 
-        '${numero}', 
-        '${descricao}', 
-        '${capacidade}',
-        '${bloco}'
-      )`;
-
+  
+    // Validação para o campo bloco
+    // const blocosPermitidos = ["A", "B", "C", "D"];
+    // if (!blocosPermitidos.includes(bloco)) {
+    //   return res.status(400).json({ error: "Bloco inválido. Use apenas A, B, C ou D." });
+    // }
+  
+    const query = `INSERT INTO sala (numero, descricao, capacidade, bloco) VALUES (?, ?, ?, ?)`;
     try {
-      connect.query(query, function (err) {
+      connect.query(query, [numero, descricao, capacidade, bloco], function (err) {
         if (err) {
           console.log(err);
-          res.status(500).json({ error: "Erro ao cadastrar sala" });
-          return;
+          return res.status(500).json({ error: "Erro ao cadastrar sala" });
         }
-        console.log("Sala cadastrada com sucesso");
         res.status(201).json({ message: "Sala cadastrada com sucesso" });
       });
     } catch (error) {
-      console.error("Erro ao executar a consulta:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
+  
 
   static async getAllSalas(req, res) {
     try {
@@ -101,7 +99,7 @@ module.exports = class salaController {
         return res.status(404).json({ error: "Salas não encontradas" });
       }
 
-      console.log("Salas obtidas com sucesso");
+      // console.log("Salas obtidas com sucesso");
       res.status(200).json({
         message: "Obtendo as salas do bloco: " + bloco,
         salas: result,
