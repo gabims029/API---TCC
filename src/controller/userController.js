@@ -4,6 +4,7 @@ const validateCpf = require("../services/validateCpf");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const SALT_ROUNDS = 10;
+const validateEmail = require("../services/validateEmail");
 
 module.exports = class userController {
   static async createUser(req, res) {
@@ -12,6 +13,11 @@ module.exports = class userController {
     const validationError = validateUser(req.body);
     if (validationError) {
       return res.status(400).json(validationError);
+    }
+
+    const emailValidation = validateEmail(email);
+    if (emailValidation) {
+      return res.status(400).json(emailValidation);
     }
 
     try {
@@ -196,15 +202,24 @@ module.exports = class userController {
 
         const user = results[0];
 
+        const emailValidation = validateEmail(email);
+        if (emailValidation) {
+          return res.status(400).json(emailValidation);
+        }
+
         const passwordOK = bcrypt.compareSync(senha, user.senha);
 
         if (!passwordOK) {
           return res.status(401).json({ error: "Senha incorreta" });
         }
 
-        const token = jwt.sign({ id: user.id_user,tipo: user.tipo }, process.env.SECRET, {
-          expiresIn: "1h",
-        });
+        const token = jwt.sign(
+          { id: user.id_user, tipo: user.tipo },
+          process.env.SECRET,
+          {
+            expiresIn: "1h",
+          }
+        );
 
         delete user.senha;
 

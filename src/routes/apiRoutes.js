@@ -22,7 +22,6 @@ router.put("/sala/", verifyJWT,authorizeRole("admin"), salaController.updateSala
 router.delete("/sala/:numero", verifyJWT,authorizeRole("admin"), salaController.deleteSala);
 
 
-
 router.post("/periodo/", periodoController.createPeriodo);
 router.get("/periodo/", periodoController.getAllPeriodos);
 router.get("/periodo/:id", periodoController.getPeriodoById);
