@@ -5,39 +5,34 @@ module.exports = async function validateCpf(cpf, userId = null) {
     const query = "SELECT id_user FROM user WHERE cpf = ?";
     const values = [cpf];
 
-    if(!validarCPF(cpf)){
-      resolve({ error: "Informe um CPF valido" });
+    if (!validarCPF(cpf)) {
+      resolve({ error: "Informe um CPF válido" });
+      return;
     }
 
     connect.query(query, values, (err, results) => {
       if (err) {
         reject("Erro ao verificar CPF");
       } else if (results.length > 0) {
-        const idcpfCadastrado = results[0].id_usuario;
+        const idCpfCadastrado = results[0].id_user;
 
-        // Se um userId foi passado (update) e o CPF pertence a outro usuário, retorna erro
-        if (userId && idcpfCadastrado !== userId) {
+        // Se o CPF pertence a outro usuário, retorna erro
+        if (!userId || Number(idCpfCadastrado) !== Number(userId)) {
           resolve({ error: "CPF já cadastrado para outro usuário" });
-        } else if (!userId) {
-          resolve({ error: "CPF já cadastrado  " });
         } else {
-          resolve(null);
+          resolve(null); // CPF é do próprio usuário → ok
         }
       } else {
-        resolve(null);
+        resolve(null); // CPF não existe → ok
       }
     });
   });
 };
 
 function validarCPF(cpf) {
-  // Remove caracteres não numéricos
   cpf = cpf.replace(/[^\d]+/g, '');
-
-  // Verifica se tem 11 dígitos ou se todos os dígitos são iguais
   if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
 
-  // Função auxiliar para calcular dígito verificador
   const calcularDigito = (base, pesoInicial) => {
     let soma = 0;
     for (let i = 0; i < base.length; i++) {
@@ -55,5 +50,3 @@ function validarCPF(cpf) {
     parseInt(cpf[10]) === segundoDigito
   );
 }
-
-
