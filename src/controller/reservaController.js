@@ -17,7 +17,7 @@ const queryAsync = (query, values) => {
 module.exports = class ControllerReserva {
   //Create Reserva
   static async createReserva(req, res) {
-    const { fk_id_periodo, fk_id_user, fk_id_sala, dias, dataInicio, dataFim } =
+    const { fk_id_periodo, fk_id_user, fk_id_sala, dias, data_inicio, data_fim } =
     req.body;
       console.log(req.body)
 
@@ -26,8 +26,8 @@ module.exports = class ControllerReserva {
       fk_id_user,
       fk_id_sala,
       dias,
-      dataInicio,
-      dataFim,
+      data_inicio,
+      data_fim,
     });
 
     if (validation) {
@@ -36,7 +36,7 @@ module.exports = class ControllerReserva {
 
     try {
       const usuario = await queryAsync(
-        "SELECT id_user FROM usuario WHERE id_user = ?",
+        "SELECT id_user FROM user WHERE id_user = ?",
         [fk_id_user]
       );
       if (usuario.length === 0) {
@@ -55,23 +55,23 @@ module.exports = class ControllerReserva {
         `
         SELECT id_reserva FROM reserva
         WHERE fk_id_sala = ? AND dias = ? AND (
-          (dataInicio < ? AND dataFim > ?) OR
-          (dataInicio < ? AND dataFim > ?) OR
-          (dataInicio >= ? AND dataInicio < ?) OR
-          (dataFim > ? AND dataFim <= ?)
+          (data_inicio < ? AND data_fim > ?) OR
+          (data_inicio < ? AND data_fim > ?) OR
+          (data_inicio >= ? AND data_inicio < ?) OR
+          (data_fim > ? AND data_fim <= ?)
         )
       `,
         [
           fk_id_sala,
           dias,
-          dataInicio,
-          dataInicio,
-          dataInicio,
-          dataFim,
-          dataInicio,
-          dataFim,
-          dataInicio,
-          dataFim,
+          data_inicio,
+          data_inicio,
+          data_inicio,
+          data_fim,
+          data_inicio,
+          data_fim,
+          data_inicio,
+          data_fim,
         ]
       );
 
@@ -82,10 +82,10 @@ module.exports = class ControllerReserva {
       }
 
       const query = `
-        INSERT INTO reserva (fk_id_periodo, fk_id_user, fk_id_sala, dias, dataInicio, dataFim)
+        INSERT INTO reserva (fk_id_periodo, fk_id_user, fk_id_sala, dias, data_inicio, data_fim)
         VALUES (?, ?, ?, ?, ?, ?)
       `;
-      const values = [fk_id_periodo, fk_id_user, fk_id_sala, dias, dataInicio, dataFim];
+      const values = [fk_id_periodo, fk_id_user, fk_id_sala, dias, data_inicio, data_fim];
 
       const result = await queryAsync(query, values);
 
@@ -94,22 +94,25 @@ module.exports = class ControllerReserva {
         id_reserva: result.insertId,
       });
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Erro ao criar reserva" });
+      console.error("Erro ao criar reserva:", error); // já imprime no terminal
+      return res.status(500).json({ 
+        error: "Erro ao criar reserva", 
+        detalhe: error.message || error 
+      });
     }
   }
 
   //Update Reserva
   static async updateReserva(req, res) {
-    const { dias, dataInicio, dataFim } = req.body;
+    const { dias, data_inicio, data_fim } = req.body;
     const reservaId = req.params.id_reserva;
 
     const validation = validateReserva({
       fk_id_user: 1,
       fk_id_sala: 1,
       dias,
-      dataInicio,
-      dataFim,
+      data_inicio,
+      data_fim,
     });
 
     if (validation) {
@@ -132,24 +135,24 @@ module.exports = class ControllerReserva {
         `
         SELECT id_reserva FROM reserva
         WHERE fk_id_sala = ? AND dias = ? AND id_reserva != ? AND (
-          (dataInicio < ? AND dataFim > ?) OR
-          (dataInicio < ? AND dataFim > ?) OR
-          (dataInicio >= ? AND dataInicio < ?) OR
-          (dataFim > ? AND dataFim <= ?)
+          (data_inicio < ? AND data_fim > ?) OR
+          (data_inicio < ? AND data_fim > ?) OR
+          (data_inicio >= ? AND data_inicio < ?) OR
+          (data_fim > ? AND data_fim <= ?)
         )
         `,
         [
           fk_id_sala,
           dias,
           reservaId,
-          dataInicio,
-          dataInicio,
-          dataInicio,
-          dataFim,
-          dataInicio,
-          dataFim,
-          dataInicio,
-          dataFim,
+          data_inicio,
+          data_inicio,
+          data_inicio,
+          data_fim,
+          data_inicio,
+          data_fim,
+          data_inicio,
+          data_fim,
         ]
       );
 
@@ -162,10 +165,10 @@ module.exports = class ControllerReserva {
       await queryAsync(
         `
         UPDATE reserva 
-        SET dias = ?, dataInicio = ?, dataFim = ?
+        SET dias = ?, data_inicio = ?, data_fim = ?
         WHERE id_reserva = ?
         `,
-        [dias, dataInicio, dataFim, reservaId]
+        [dias, data_inicio, data_fim, reservaId]
       );
 
       return res
@@ -180,7 +183,7 @@ module.exports = class ControllerReserva {
   //Get Reservas
   static async getReservas(req, res) {
     const query = `
-      SELECT r.id_reserva, r.fk_id_user, r.fk_id_sala, r.dias, r.dataInicio, r.dataFim, 
+      SELECT r.id_reserva, r.fk_id_user, r.fk_id_sala, r.dias, r.data_inicio, r.data_fim, 
       u.nome AS nomeUsuario, s.numero AS salaNome
       FROM reserva r
       INNER JOIN usuario u ON r.fk_id_user = u.id_user
@@ -281,16 +284,16 @@ function reservaFormat(reserva) {
   }
 
   // Se o campo 'dataInicio' for Date, extrai apenas o horário no formato HH:MM:SS
-  if (reserva.dataInicio instanceof Date) {
-    reserva.horarioInicio = reserva.dataInicio
+  if (reserva.data_inicio instanceof Date) {
+    reserva.horarioInicio = reserva.data_inicio
       .toISOString()
       .split("T")[1]
       .split(".")[0]; // Pega apenas a parte de horário
   }
 
   // Mesmo processo para 'dataFim'
-  if (reserva.dataFim instanceof Date) {
-    reserva.dataFim = reserva.dataFim
+  if (reserva.data_fim instanceof Date) {
+    reserva.data_fim = reserva.data_fim
       .toISOString()
       .split("T")[1]
       .split(".")[0]; // Pega apenas a parte de horário
