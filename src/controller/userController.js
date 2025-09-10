@@ -90,58 +90,85 @@ module.exports = class userController {
   }
 
   static async updateUser(req, res) {
-    const { cpf, email, senha, nome, id } = req.body;
-    const userId = id;
-    const VerificarToken = userId;
+  const { cpf, email, senhaAtual, senha, nome, id } = req.body;
+  const userId = id;
 
-    if (Number(VerificarToken) !== Number(req.userId)) {
-      return res
-        .status(403)
-        .json({ error: "Usuário não autorizado a atualizar este perfil" });
+  // Verifica se o usuário logado é o dono do perfil
+  if (Number(userId) !== Number(req.userId)) {
+    return res
+      .status(403)
+      .json({ error: "Usuário não autorizado a atualizar este perfil" });
+  }
+
+  // Validação dos dados obrigatórios
+  const validationError = validateUser({ cpf, email, senha, nome });
+  if (validationError) {
+    return res.status(400).json(validationError);
+  }
+
+  try {
+    // Verifica se o CPF já existe em outro usuário
+    const cpfError = await validateCpf(cpf, id);
+    if (cpfError) {
+      return res.status(400).json(cpfError);
     }
 
-    const validationError = validateUser(req.body);
-    if (validationError) {
-      return res.status(400).json(validationError);
-    }
-
-    try {
-      const cpfError = await validateCpf(cpf, id);
-      if (cpfError) {
-        return res.status(400).json(cpfError);
+    // Busca a senha atual do usuário no banco
+    const querySelect = "SELECT senha FROM user WHERE id_user = ?";
+    connect.query(querySelect, [id], async (err, results) => {
+      if (err) {
+        console.log(err);
+        return res
+          .status(500)
+          .json({ error: "Erro interno do servidor", err });
       }
 
+      if (results.length === 0) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+
+      const senhaBanco = results[0].senha;
+
+      // Compara a senha atual fornecida com o hash do banco
+      const senhaOK = await bcrypt.compare(senhaAtual, senhaBanco);
+      if (!senhaOK) {
+        return res.status(401).json({ error: "Senha atual incorreta" });
+      }
+
+      // Gera hash da nova senha
       const hashedPassword = await bcrypt.hash(senha, SALT_ROUNDS);
 
-      const query =
+      // Atualiza os dados do usuário
+      const queryUpdate =
         "UPDATE user SET cpf = ?, email = ?, senha = ?, nome = ? WHERE id_user = ?";
       connect.query(
-        query,
+        queryUpdate,
         [cpf, email, hashedPassword, nome, id],
         (err, results) => {
           if (err) {
-            if (err.code === "ER_DUP_ENTRY") {
-              if (err.message.includes("email")) {
-                return res.status(400).json({ error: "Email já cadastrado" });
-              }
-            } else {
-              return res
-                .status(500)
-                .json({ error: "Erro interno do servidor", err });
+            if (err.code === "ER_DUP_ENTRY" && err.message.includes("email")) {
+              return res.status(400).json({ error: "Email já cadastrado" });
             }
+            return res
+              .status(500)
+              .json({ error: "Erro interno do servidor", err });
           }
+
           if (results.affectedRows === 0) {
             return res.status(404).json({ error: "Usuário não encontrado" });
           }
+
           return res
             .status(200)
             .json({ message: "Usuário atualizado com sucesso" });
         }
       );
-    } catch (error) {
-      return res.status(500).json({ error });
-    }
+    });
+  } catch (error) {
+    return res.status(500).json({ error });
   }
+}
+
 
   static async deleteUser(req, res) {
     const userId = req.params.id;
@@ -226,4 +253,46 @@ module.exports = class userController {
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
+  
 };
+
+
+async function atualizarSenha(req, res) {
+  const { id_user, senhaAtual, novaSenha } = req.body;
+
+  if (!senhaAtual || !novaSenha) {
+    return res.status(400).json({ error: "Preencha a senha atual e nova" });
+  }
+
+  try {
+    // 1. Buscar o hash da senha atual no banco
+    const query = "SELECT senha FROM user WHERE id_user = ?";
+    connect.query(query, [id_user], async (err, results) => {
+      if (err) return res.status(500).json({ error: "Erro no servidor" });
+      if (results.length === 0) return res.status(404).json({ error: "Usuário não encontrado" });
+
+      const hash = results[0].senha;
+
+      // 2. Comparar senha atual digitada com o hash do banco
+      const senhaCorreta = await bcrypt.compare(senhaAtual, hash);
+      if (!senhaCorreta) {
+        return res.status(401).json({ error: "Senha atual incorreta" });
+      }
+
+      // 3. Hash da nova senha
+      
+      const novaSenhaHash = await bcrypt.hash(novaSenha, SALT_ROUNDS);
+
+      // 4. Atualizar no banco
+      const updateQuery = "UPDATE user SET senha = ? WHERE id_user = ?";
+      connect.query(updateQuery, [novaSenhaHash, id_user], (err2) => {
+        if (err2) return res.status(500).json({ error: "Erro ao atualizar senha" });
+        return res.status(200).json({ message: "Senha atualizada com sucesso" });
+      });
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
+
