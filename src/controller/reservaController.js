@@ -37,7 +37,7 @@ module.exports = class ControllerReserva {
     try {
       const usuario = await queryAsync(
         "SELECT id_user FROM usuario WHERE id_user = ?",
-        [id_user]
+        [fk_id_user]
       );
       if (usuario.length === 0) {
         return res.status(400).json({ error: "Usuário não encontrado" });
@@ -85,7 +85,7 @@ module.exports = class ControllerReserva {
         INSERT INTO reserva (fk_id_periodo, fk_id_user, fk_id_sala, dias, dataInicio, dataFim)
         VALUES (?, ?, ?, ?, ?, ?)
       `;
-      const values = [fk_id_user, fk_id_sala, dias, dataInicio, dataFim];
+      const values = [fk_id_periodo, fk_id_user, fk_id_sala, dias, dataInicio, dataFim];
 
       const result = await queryAsync(query, values);
 
