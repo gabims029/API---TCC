@@ -146,8 +146,10 @@ module.exports = class userController {
   static async deleteUser(req, res) {
     const userId = req.params.id;
     const usuarioId = req.userId;
+    const tipo = req.user.tipo; // injetado pelo verifyJWT
 
-    if (Number(userId) !== Number(usuarioId)) {
+    // Permite admin deletar qualquer usuário, ou usuário deletar só ele mesmo
+    if (Number(userId) !== Number(usuarioId) && tipo !== "admin") {
       return res
         .status(403)
         .json({ error: "Usuário não autorizado a deletar este perfil" });
@@ -172,7 +174,8 @@ module.exports = class userController {
       console.error("Erro inesperado:", error);
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
-  }
+}
+
 
   static async postLogin(req, res) {
     const { email, senha } = req.body;

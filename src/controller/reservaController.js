@@ -14,15 +14,14 @@ const queryAsync = (query, values) => {
   });
 };
 
-module.exports = class ControllerReserva {
-  //Create Reserva
+module.exports = class reservaController {
+  // Create Reserva
   static async createReserva(req, res) {
-    const { fk_id_periodo, fk_id_user, fk_id_sala, dias, dataInicio, dataFim } =
-    req.body;
-      console.log(req.body)
+    const { fk_id_user, fk_id_sala, dias, dataInicio, dataFim, fk_id_periodo } = req.body;
+    console.log(req.body);
 
+    // Validação
     const validation = validateReserva({
-      fk_id_periodo,
       fk_id_user,
       fk_id_sala,
       dias,
@@ -35,14 +34,16 @@ module.exports = class ControllerReserva {
     }
 
     try {
+      // Verificar se usuário existe
       const usuario = await queryAsync(
-        "SELECT id_user FROM usuario WHERE id_user = ?",
-        [id_user]
+        "SELECT id_user FROM user WHERE id_user = ?",
+        [fk_id_user]
       );
       if (usuario.length === 0) {
         return res.status(400).json({ error: "Usuário não encontrado" });
       }
 
+      // Verificar se sala existe
       const sala = await queryAsync(
         "SELECT id_sala FROM sala WHERE id_sala = ?",
         [fk_id_sala]
@@ -51,6 +52,7 @@ module.exports = class ControllerReserva {
         return res.status(400).json({ error: "Sala não encontrada" });
       }
 
+      // Verificar conflitos
       const conflito = await queryAsync(
         `
         SELECT id_reserva FROM reserva
@@ -81,11 +83,12 @@ module.exports = class ControllerReserva {
           .json({ error: "A sala já está reservada neste dia e horário." });
       }
 
+      // Inserir reserva
       const query = `
         INSERT INTO reserva (fk_id_periodo, fk_id_user, fk_id_sala, dias, dataInicio, dataFim)
         VALUES (?, ?, ?, ?, ?, ?)
       `;
-      const values = [fk_id_user, fk_id_sala, dias, dataInicio, dataFim];
+      const values = [fk_id_periodo, fk_id_user, fk_id_sala, dias, dataInicio, dataFim];
 
       const result = await queryAsync(query, values);
 
@@ -99,13 +102,13 @@ module.exports = class ControllerReserva {
     }
   }
 
-  //Update Reserva
+  // Update Reserva
   static async updateReserva(req, res) {
     const { dias, dataInicio, dataFim } = req.body;
     const reservaId = req.params.id_reserva;
 
     const validation = validateReserva({
-      fk_id_user: 1,
+      fk_id_user: 1, // apenas para validação de campos obrigatórios
       fk_id_sala: 1,
       dias,
       dataInicio,
@@ -177,23 +180,19 @@ module.exports = class ControllerReserva {
     }
   }
 
-  //Get Reservas
+  // Get Reservas
   static async getReservas(req, res) {
     const query = `
       SELECT r.id_reserva, r.fk_id_user, r.fk_id_sala, r.dias, r.dataInicio, r.dataFim, 
       u.nome AS nomeUsuario, s.numero AS salaNome
       FROM reserva r
-      INNER JOIN usuario u ON r.fk_id_user = u.id_user
+      INNER JOIN user u ON r.fk_id_user = u.id_user
       INNER JOIN sala s ON r.fk_id_sala = s.id_sala
     `;
 
     try {
       const results = await queryAsync(query);
-
-      const reservasFormatadas = results.map((reserva) =>
-        reservaFormat(reserva)
-      );
-
+      const reservasFormatadas = results.map((reserva) => reservaFormat(reserva));
       return res
         .status(200)
         .json({ message: "Lista de Reservas", reservas: reservasFormatadas });
@@ -203,18 +202,16 @@ module.exports = class ControllerReserva {
     }
   }
 
-  //Delete Reserva
+  // Delete Reserva
   static async deleteReserva(req, res) {
     const reservaId = req.params.id_reserva;
     const query = `DELETE FROM reserva WHERE id_reserva = ?`;
 
     try {
       const results = await queryAsync(query, [reservaId]);
-
       if (results.affectedRows === 0) {
         return res.status(404).json({ error: "Reserva não encontrada" });
       }
-
       return res.status(200).json({ message: "Reserva excluída com sucesso" });
     } catch (error) {
       console.error(error);
@@ -222,44 +219,34 @@ module.exports = class ControllerReserva {
     }
   }
 
-  //Get Horarios Sala
+  // Get Horarios Sala
   static async getHorariosSala(req, res) {
     const { id_sala, dias } = req.params;
-
     if (!id_sala || !dias) {
       return res
         .status(400)
-        .json({ error: "Parâmetros 'id_sala' e 'data' são obrigatórios." });
+        .json({ error: "Parâmetros 'id_sala' e 'dias' são obrigatórios." });
     }
 
     try {
       const horarios = await getHorariosSala(id_sala, dias);
-      return res.status(200).json({
-        sala: id_sala,
-        data,
-        horarios,
-      });
+      return res.status(200).json({ sala: id_sala, dias, horarios });
     } catch (error) {
       console.error(error);
       return res.status(500).json({ error: "Erro ao obter horários da sala." });
     }
   }
 
-  //Get Reservas Por Usuario - PROCEDURE
+  // Get Reservas Por Usuario - PROCEDURE
   static async getReservasPorUsuario(req, res) {
     const { id_user } = req.params;
-
     if (!id_user) {
       return res.status(400).json({ error: "ID do usuário é obrigatório." });
     }
 
     try {
       const reservas = await listarReservasPorUsuario(id_user);
-
-      const reservasFormatadas = reservas.map((reserva) =>
-        reservaFormat(reserva)
-      );
-
+      const reservasFormatadas = reservas.map((reserva) => reservaFormat(reserva));
       return res.status(200).json({
         message: `Reservas do usuário ${id_user}`,
         reservas: reservasFormatadas,
@@ -275,27 +262,14 @@ module.exports = class ControllerReserva {
 
 // Função auxiliar que formata os campos de data e horário de uma reserva
 function reservaFormat(reserva) {
-  // Se o campo 'dias' for do tipo Date, converte para o formato YYYY-MM-DD
   if (reserva.dias instanceof Date) {
-    reserva.dias = reserva.dias.toISOString().split("T")[0]; // Pega apenas a parte da data
+    reserva.dias = reserva.dias.toISOString().split("T")[0];
   }
-
-  // Se o campo 'dataInicio' for Date, extrai apenas o horário no formato HH:MM:SS
   if (reserva.dataInicio instanceof Date) {
-    reserva.horarioInicio = reserva.dataInicio
-      .toISOString()
-      .split("T")[1]
-      .split(".")[0]; // Pega apenas a parte de horário
+    reserva.horarioInicio = reserva.dataInicio.toISOString().split("T")[1].split(".")[0];
   }
-
-  // Mesmo processo para 'dataFim'
   if (reserva.dataFim instanceof Date) {
-    reserva.dataFim = reserva.dataFim
-      .toISOString()
-      .split("T")[1]
-      .split(".")[0]; // Pega apenas a parte de horário
+    reserva.horarioFim = reserva.dataFim.toISOString().split("T")[1].split(".")[0];
   }
-
-  // Retorna o objeto reserva com os campos formatados
   return reserva;
 }
