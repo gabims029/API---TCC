@@ -26,14 +26,18 @@ module.exports = class salaController {
     const query = `INSERT INTO sala (numero, descricao, capacidade, bloco) VALUES (?, ?, ?, ?)`;
 
     try {
-      connect.query(query, [numero, descricao, capacidade, bloco], function (err) {
-        if (err) {
-          console.error("Erro ao cadastrar sala:", err.sqlMessage);
-          return res.status(500).json({ error: err.sqlMessage });
+      connect.query(
+        query,
+        [numero, descricao, capacidade, bloco],
+        function (err) {
+          if (err) {
+            console.error("Erro ao cadastrar sala:", err.sqlMessage);
+            return res.status(500).json({ error: err.sqlMessage });
+          }
+          console.log("Sala cadastrada com sucesso");
+          res.status(201).json({ message: "Sala cadastrada com sucesso" });
         }
-        console.log("Sala cadastrada com sucesso");
-        res.status(201).json({ message: "Sala cadastrada com sucesso" });
-      });
+      );
     } catch (error) {
       console.error("Erro ao executar a consulta:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
@@ -54,6 +58,52 @@ module.exports = class salaController {
       });
     } catch (error) {
       console.error("Erro ao executar a consulta:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  }
+
+  // Listar salas disponíveis por data, organizadas por bloco
+  static async getSalasDisponiveisPorData(req, res) {
+    const { data } = req.query;
+
+    if (!data) {
+      return res
+        .status(400)
+        .json({ error: "A data é obrigatória (formato: YYYY-MM-DD)" });
+    }
+
+    try {
+      const query = `
+      SELECT s.*
+      FROM sala s
+      WHERE s.numero NOT IN (
+        SELECT r.fk_id_sala
+        FROM reserva r
+        WHERE DATE(r.data_reserva) = ?
+      )
+      ORDER BY s.bloco, s.numero
+    `;
+
+      const salasDisponiveis = await queryAsync(query, [data]);
+
+      if (salasDisponiveis.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "Nenhuma sala disponível nesta data." });
+      }
+
+      // Agrupar por bloco
+      const salasPorBloco = {};
+      salasDisponiveis.forEach((sala) => {
+        if (!salasPorBloco[sala.bloco]) {
+          salasPorBloco[sala.bloco] = [];
+        }
+        salasPorBloco[sala.bloco].push(sala);
+      });
+
+      res.status(200).json({ data, salasDisponiveis: salasPorBloco });
+    } catch (error) {
+      console.error("Erro ao buscar salas disponíveis:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -140,15 +190,19 @@ module.exports = class salaController {
           SET descricao = ?, capacidade = ?, bloco = ?
           WHERE numero = ?
         `;
-        connect.query(updateQuery, [descricao, capacidade, bloco, numero], function (err) {
-          if (err) {
-            console.error("Erro ao atualizar a sala:", err.sqlMessage);
-            return res.status(500).json({ error: err.sqlMessage });
-          }
+        connect.query(
+          updateQuery,
+          [descricao, capacidade, bloco, numero],
+          function (err) {
+            if (err) {
+              console.error("Erro ao atualizar a sala:", err.sqlMessage);
+              return res.status(500).json({ error: err.sqlMessage });
+            }
 
-          console.log("Sala atualizada com sucesso");
-          res.status(200).json({ message: "Sala atualizada com sucesso" });
-        });
+            console.log("Sala atualizada com sucesso");
+            res.status(200).json({ message: "Sala atualizada com sucesso" });
+          }
+        );
       });
     } catch (error) {
       console.error("Erro ao executar a consulta:", error);
@@ -170,7 +224,8 @@ module.exports = class salaController {
 
         if (reservas.length > 0) {
           return res.status(400).json({
-            error: "Não é possível excluir a sala, pois há reservas associadas.",
+            error:
+              "Não é possível excluir a sala, pois há reservas associadas.",
           });
         } else {
           const deleteQuery = `DELETE FROM sala WHERE numero = ?`;
