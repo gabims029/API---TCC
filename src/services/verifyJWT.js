@@ -1,16 +1,11 @@
 const jwt = require("jsonwebtoken");
 
 function verifyJWT(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  if (!authHeader) {
-    return res.status(401).json({ auth: false, message: "Token não fornecido" });
-  }
 
-  // Se vier "Bearer <token>", pega só o token
-  // Se vier só "<token>", usa direto
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.split(" ")[1]
-    : authHeader;
+
+  const token = req.headers["authorization"]; // token puro
+
+
 
   if (!token) {
     return res.status(401).json({ auth: false, message: "Token inválido" });
@@ -23,10 +18,13 @@ function verifyJWT(req, res, next) {
         .json({ auth: false, message: "Falha na autenticação do Token" });
     }
 
-    req.user = {
-      id: decoded.id,
-      tipo: decoded.tipo.toLowerCase(),
-    };
+
+
+    // Injeta usuário de forma consistente
+    req.userId = decoded.id;          // id do usuário
+    req.user = { tipo: decoded.tipo.toLowerCase() }; // tipo do usuário em minúsculo
+
+
 
     next();
   });
