@@ -44,8 +44,8 @@ router.delete("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoControll
 
 // Reservas (Routes consolidadas e com segurança aplicada)
 router.post("/reserva/", verifyJWT, reservaController.createReserva);
-router.get("/reserva/", verifyJWT, reservaController.getAllSchedules);
-router.put("/reserva/", verifyJWT, reservaController.updateReserva);
+router.get("/reserva/", verifyJWT, reservaController.getAllReservas);
+router.put("/reserva/:id_reserva", verifyJWT, reservaController.updateReserva);
 router.delete("/reserva/", verifyJWT, reservaController.deleteSchedule);
 
 
