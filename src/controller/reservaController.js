@@ -22,105 +22,161 @@ function isInTimeRange(timeStart, timeRange) {
 
 module.exports = class ControllerReserva {
   //Create Reserva
-    //Create Reserva
-//Create Reserva
-static async createReserva(req, res) {
-  const { fk_id_periodo, fk_id_user, fk_id_sala, dias, data_inicio, data_fim } =
-    req.body;
+  //Create Reserva
+  //Create Reserva
+  static async createReserva(req, res) {
+    const {
+      fk_id_periodo,
+      fk_id_user,
+      fk_id_sala,
+      dias,
+      data_inicio,
+      data_fim,
+    } = req.body;
 
-  console.log(req.body);
-
-  // valida campos obrigatórios
-  if (!fk_id_periodo || !fk_id_user || !fk_id_sala || !dias || !data_inicio || !data_fim) {
-    return res.status(400).json({ error: "Campos obrigatórios faltando" });
-  }
-
-  // garantir que dias seja array
-  if (!Array.isArray(dias) || dias.length === 0) {
-    return res.status(400).json({ error: "O campo 'dias' deve ser um array com ao menos 1 dia" });
-  }
-
-  // string que será salva no banco (ex: "Seg,Qua,Sex")
-  const diasString = dias.map(d => String(d).trim()).join(",");
-
-  // validação com seu serviço (se ele espera string, passe diasString)
-  const validation = validateReserva({
-    fk_id_periodo,
-    fk_id_user,
-    fk_id_sala,
-    dias: diasString,
-    data_inicio,
-    data_fim,
-  });
-
-  if (validation) {
-    return res.status(400).json(validation);
-  }
-
-  try {
-    // Verifica usuário
-    const usuario = await queryAsync(
-      "SELECT id_user FROM user WHERE id_user = ?",
-      [fk_id_user]
-    );
-    if (usuario.length === 0) {
-      return res.status(400).json({ error: "Usuário não encontrado" });
+    // Campos obrigatórios
+    if (
+      !fk_id_periodo ||
+      !fk_id_user ||
+      !fk_id_sala ||
+      !dias ||
+      !data_inicio ||
+      !data_fim
+    ) {
+      return res.status(400).json({ error: "Todos os campos devem ser preenchidos" });
+    }
+    // Validar se data_inicio <= data_fim
+    if (new Date(data_inicio) > new Date(data_fim)) {
+      return res.status(400).json({
+        error: "A data de início não pode ser maior que a data de fim",
+      });
     }
 
-    // Verifica sala
-    const sala = await queryAsync(
-      "SELECT id_sala FROM sala WHERE id_sala = ?",
-      [fk_id_sala]
-    );
-    if (sala.length === 0) {
-      return res.status(400).json({ error: "Sala não encontrada" });
+    if (!Array.isArray(dias) || dias.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "O campo 'dias' deve ser um array com ao menos 1 dia" });
     }
 
-    // Verifica conflito (sobreposição de horários) para cada dia do array
-    const conflitoQuery = `
-      SELECT id_reserva FROM reserva
-      WHERE fk_id_sala = ? AND FIND_IN_SET(?, dias) > 0
-        AND (data_inicio < ? AND data_fim > ?)
+    const diasArray = dias.map((d) => d.trim());
+    const diasString = diasArray.join(",");
+
+    // Validação com serviço externo
+    const validation = validateReserva({
+      fk_id_periodo,
+      fk_id_user,
+      fk_id_sala,
+      dias: diasString,
+      data_inicio,
+      data_fim,
+    });
+    if (validation) return res.status(400).json(validation);
+
+    try {
+      // Verifica usuário
+      const usuario = await queryAsync(
+        "SELECT id_user FROM user WHERE id_user = ?",
+        [fk_id_user]
+      );
+      if (usuario.length === 0)
+        return res.status(400).json({ error: "Usuário não encontrado" });
+
+      // Verifica sala
+      const sala = await queryAsync(
+        "SELECT id_sala FROM sala WHERE id_sala = ?",
+        [fk_id_sala]
+      );
+      if (sala.length === 0)
+        return res.status(400).json({ error: "Sala não encontrada" });
+
+      // Valida dias x datas
+      const start = new Date(data_inicio);
+      const end = new Date(data_fim);
+
+      const diasSemanaMap = {
+        0: "Dom",
+        1: "Seg",
+        2: "Ter",
+        3: "Qua",
+        4: "Qui",
+        5: "Sex",
+        6: "Sab",
+      };
+
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const diaAtual = diasSemanaMap[d.getDay()];
+        if (!diasArray.includes(diaAtual)) {
+          return res.status(400).json({
+            error: `O dia '${diaAtual}' da data ${
+              d.toISOString().split("T")[0]
+            } não está incluído no array 'dias'`,
+          });
+        }
+      }
+
+      // Verifica conflito de período
+      const periodo = await queryAsync(
+        "SELECT * FROM periodo WHERE id_periodo = ?",
+        [fk_id_periodo]
+      );
+      if (periodo.length === 0)
+        return res.status(400).json({ error: "Período não encontrado" });
+
+      const { horario_inicio, horario_fim } = periodo[0];
+
+      const conflitoQuery = `
+      SELECT r.id_reserva 
+      FROM reserva r
+      JOIN periodo p ON r.fk_id_periodo = p.id_periodo
+      WHERE r.fk_id_sala = ? AND FIND_IN_SET(?, r.dias) > 0
+        AND (
+          (p.horario_inicio < ? AND p.horario_fim > ?) 
+        )
     `;
 
-    for (const dia of dias) {
-      const conflito = await queryAsync(conflitoQuery, [
-        fk_id_sala,
-        dia,
-        data_fim,    // new_end
-        data_inicio, // new_start
-      ]);
-
-      if (conflito.length > 0) {
-        return res.status(400).json({
-          error: `A sala já está reservada no dia ${dia} nesse intervalo de horário.`,
-        });
+      for (const dia of diasArray) {
+        const conflito = await queryAsync(conflitoQuery, [
+          fk_id_sala,
+          dia,
+          horario_fim,
+          horario_inicio,
+        ]);
+        if (conflito.length > 0) {
+          return res.status(400).json({
+            error: `A sala já está reservada no dia ${dia} nesse período (${horario_inicio} - ${horario_fim})`,
+          });
+        }
       }
-    }
 
-    // Inserir reserva
-    const insertQuery = `
+      // Inserir reserva
+      const insertQuery = `
       INSERT INTO reserva (fk_id_periodo, fk_id_user, fk_id_sala, dias, data_inicio, data_fim)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
-    const values = [fk_id_periodo, fk_id_user, fk_id_sala, diasString, data_inicio, data_fim];
+      const values = [
+        fk_id_periodo,
+        fk_id_user,
+        fk_id_sala,
+        diasString,
+        data_inicio,
+        data_fim,
+      ];
+      const result = await queryAsync(insertQuery, values);
 
-    const result = await queryAsync(insertQuery, values);
-
-    return res.status(201).json({
-      message: "Reserva criada com sucesso",
-      id_reserva: result.insertId,
-    });
-  } catch (error) {
-    console.error("Erro ao criar reserva:", error);
-    return res.status(500).json({
-      error: "Erro ao criar reserva",
-      detalhe: error.message || error,
-    });
+      return res.status(201).json({
+        message: "Reserva criada com sucesso",
+        id_reserva: result.insertId,
+      });
+    } catch (error) {
+      console.error("Erro ao criar reserva:", error);
+      return res
+        .status(500)
+        .json({
+          error: "Erro ao criar reserva",
+          detalhe: error.message || error,
+        });
+    }
   }
-}
-
-
 
   //Update Reserva
   static async updateReserva(req, res) {
@@ -275,21 +331,64 @@ static async createReserva(req, res) {
     }
   }
 
-  static async getAllSchedules(req, res) {
+  static async getAllReservas(req, res) {
     try {
       const query = `
-        SELECT r.*, u.nome AS nomeUsuario, s.numero AS salaNome
-        FROM reserva r
-        JOIN user u ON r.fk_id_user = u.id_user
-        JOIN sala s ON r.fk_id_sala = s.id_sala
-      `;
+      SELECT r.id_reserva, r.fk_id_periodo, r.fk_id_user, r.fk_id_sala, r.dias, r.data_inicio, r.data_fim,
+             u.nome AS nomeUsuario, s.numero AS salaNome
+      FROM reserva r
+      JOIN user u ON r.fk_id_user = u.id_user
+      JOIN sala s ON r.fk_id_sala = s.id_sala
+    `;
 
       const results = await queryAsync(query);
-      const schedulesByDay = splitDaysSchedule(results);
+
+      if (!results || results.length === 0) {
+        return res.status(200).json({ schedulesByDay: {} });
+      }
+
+      const schedulesByDay = {
+        Seg: [],
+        Ter: [],
+        Qua: [],
+        Qui: [],
+        Sex: [],
+        Sab: [],
+      };
+
+      results.forEach((reserva) => {
+        if (!reserva.dias) return;
+
+        const diasArray = Array.isArray(reserva.dias)
+          ? reserva.dias
+          : reserva.dias.split(",");
+
+        diasArray.forEach((dia) => {
+          const d = dia.trim();
+          if (schedulesByDay[d]) {
+            schedulesByDay[d].push({
+              id: reserva.id_reserva,
+              fk_id_periodo: reserva.fk_id_periodo, // adicionando fk_id_periodo
+              nome: reserva.nomeUsuario,
+              classroomName: reserva.salaNome,
+              dataInicio: reserva.data_inicio
+                ? reserva.data_inicio.toISOString().split("T")[0]
+                : null,
+              dataFim: reserva.data_fim
+                ? reserva.data_fim.toISOString().split("T")[0]
+                : null,
+            });
+          }
+        });
+      });
+
       return res.status(200).json({ schedulesByDay });
     } catch (error) {
       console.error("Erro ao executar a consulta:", error);
-      return res.status(500).json({ error: "Erro interno do servidor" });
+      return res.status(500).json({
+        error: "Erro interno do servidor",
+        detalhe: error.message,
+      });
     }
   }
 

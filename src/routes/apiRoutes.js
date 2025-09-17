@@ -12,7 +12,7 @@ router.post("/user/", verifyJWT, authorizeRole("admin"), userController.createUs
 router.get("/user/", verifyJWT, userController.getAllUsers);
 router.get("/user/:id", verifyJWT, userController.getUserById);
 router.put("/user/", verifyJWT, userController.updateUser);
-router.delete("/user/:id", verifyJWT, authorizeRole("admin"), userController.deleteUser);
+router.delete("/user/:id", verifyJWT, userController.deleteUser);
 
 
 
@@ -44,7 +44,7 @@ router.delete("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoControll
 
 // Reservas (Routes consolidadas e com segurança aplicada)
 router.post("/reserva/", verifyJWT, reservaController.createReserva);
-router.get("/reserva/", verifyJWT, reservaController.getAllSchedules);
+router.get("/reserva/", verifyJWT, reservaController.getAllReservas);
 router.put("/reserva/", verifyJWT, reservaController.updateReserva);
 router.delete("/reserva/", verifyJWT, reservaController.deleteSchedule);
 
