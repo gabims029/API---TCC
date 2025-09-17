@@ -15,7 +15,6 @@ router.put("/user/", verifyJWT, userController.updateUser);
 router.delete("/user/:id", verifyJWT, authorizeRole("admin"), userController.deleteUser);
 
 
-
 // Salas (Routes consolidadas e conflitos resolvidos)
 // A rota mais específica deve vir primeiro para evitar conflitos
 router.get("/salas/disponiveis", salaController.getSalasDisponiveisPorData);
@@ -25,6 +24,7 @@ router.get("/salas/disponiveis", salaController.getSalasDisponiveisPorData);
 // O mais comum é usar um prefixo para diferenciar. Por exemplo:
 router.get("/sala/bloco/:bloco", verifyJWT, salaController.getSalaByBloco);
 router.get("/sala/numero/:numero", verifyJWT, salaController.getSalaById);
+router.get("/salas/disponiveis", verifyJWT, salaController.getSalasDisponiveisPorData);
 
 // Rotas sem parâmetros
 router.post("/sala/", verifyJWT, authorizeRole("admin"), salaController.createSala);
@@ -46,7 +46,7 @@ router.delete("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoControll
 router.post("/reserva/", verifyJWT, reservaController.createReserva);
 router.get("/reserva/", verifyJWT, reservaController.getAllReservas);
 router.put("/reserva/:id_reserva", verifyJWT, reservaController.updateReserva);
-router.delete("/reserva/", verifyJWT, reservaController.deleteSchedule);
+router.delete("/reserva/:id_reserva", verifyJWT, reservaController.deleteSchedule);
 
 
 module.exports = router;

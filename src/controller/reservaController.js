@@ -264,7 +264,12 @@ module.exports = class ControllerReserva {
         };
 
         results.forEach((schedule) => {
-          const diasSemana = schedule.days.split(","); // Ex: ["Seg", "Qua"]
+          try {
+    const dias = (schedule.days || schedule.dias).split(",");
+    // lógica aqui...
+  } catch (e) {
+    console.error("Erro com schedule:", schedule);
+  }
 
           diasSemana.forEach((dia) => {
             if (schedulesByDay[dia]) {
@@ -294,7 +299,6 @@ module.exports = class ControllerReserva {
       SELECT reserva.*, user.nome AS usernome
 FROM reserva
 JOIN user ON reserva.fk_id_user = user.id_user
-
     `;
 
       const results = await new Promise((resolve, reject) => {
@@ -313,30 +317,35 @@ JOIN user ON reserva.fk_id_user = user.id_user
   }
 
   static async deleteSchedule(req, res) {
-    const reservaId = req.params.id;
-    const query = `DELETE FROM reserva WHERE id = ?`;
-    const values = [reservaId];
+  const reservaId = req.params.id_reserva; // Rota deve ter o mesmo nome!
 
-    try {
-      connect.query(query, values, function (err, results) {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ error: "Erro interno do servidor" });
-        }
-
-        if (results.affectedRows === 0) {
-          return res.status(404).json({ error: "Agendamento não encontrado" });
-        }
-
-        return res
-          .status(200)
-          .json({ message: "Agendamento excluído com ID: " + scheduleId });
-      });
-    } catch (error) {
-      console.error("Erro ao executar a consulta:", error);
-      return res.status(500).json({ error: "Erro interno do servidor" });
-    }
+  if (!reservaId) {
+    return res.status(400).json({ error: "ID da reserva é obrigatório" });
   }
+
+  const query = `DELETE FROM reserva WHERE id_reserva = ?`;
+  const values = [reservaId];
+
+  try {
+    connect.query(query, values, function (err, results) {
+      if (err) {
+        console.error("Erro no DELETE:", err);
+        return res.status(500).json({ error: "Erro interno do servidor" });
+      }
+
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: "Agendamento não encontrado" });
+      }
+
+      return res
+        .status(200)
+        .json({ message: "Agendamento excluído com ID: " + reservaId });
+    });
+  } catch (error) {
+    console.error("Erro ao executar a consulta:", error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
 };
 
 // Função auxiliar que formata os campos de data e horário de uma reserva
