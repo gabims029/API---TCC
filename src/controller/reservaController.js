@@ -10,25 +10,6 @@ function isInTimeRange(timeStart, timeRange) {
   return scheduleTime >= startTime && scheduleTime < endTime;
 }
 
-module.exports = class scheduleController {
-  static async createSchedule(req, res) {
-    const { data_inicio, data_fim, dias, fk_id_user, fk_id_sala, fk_id_periodo } =
-      req.body;
-    // Verificar se todos os campos estão preenchidos
-    // Verificar se todos os campos estão preenchidos
-    if (
-      !data_inicio ||
-      !data_fim ||
-      !dias ||
-      !fk_id_user ||
-      !fk_id_sala ||
-      !fk_id_periodo 
-    ) {
-      return res
-        .status(400)
-        .json({ error: "Todos os campos devem ser preenchidos" });
-    }
-
 
 module.exports = class ControllerReserva {
   //Create Reserva

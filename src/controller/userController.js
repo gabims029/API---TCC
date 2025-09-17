@@ -159,7 +159,7 @@ module.exports = class userController {
         queryUpdate,
 
         [cpf, email, hashedPassword, nome, id],
-=======
+
         [cpf, email, senhaFinal, nome, userIdToUpdate],
 
         (err, results) => {
