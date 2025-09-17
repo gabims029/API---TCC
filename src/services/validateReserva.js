@@ -1,18 +1,18 @@
 module.exports = function validateReserva({
-  fk_id_usuario,
+  fk_id_user,
   fk_id_sala,
-  data,
-  horarioInicio,
-  horarioFim
+  dias,
+  data_inicio,
+  data_fim
 }) {
   // Verificar se todos os campos foram preenchidos
-  if (!fk_id_usuario || !fk_id_sala || !data || !horarioInicio || !horarioFim) {
+  if (!fk_id_user || !fk_id_sala || !dias || !data_inicio || !data_fim) {
     return { error: "Todos os campos devem ser preenchidos" };
   }
 
   // Criar objetos Date para os horários
-  const inicioReserva = new Date(`${data}T${horarioInicio}`);
-  const fimReserva = new Date(`${data}T${horarioFim}`);
+  const inicioReserva = new Date(`${dias}T${data_inicio}`);
+  const fimReserva = new Date(`${dias}T${data_fim}`);
   const agora = new Date();
 
   // Formatar a data atual no padrão YYYY-MM-DD HH:mm:ss

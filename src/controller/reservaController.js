@@ -29,198 +29,168 @@ module.exports = class scheduleController {
         .json({ error: "Todos os campos devem ser preenchidos" });
     }
 
-    // Caso 'days' seja uma string, use-a diretamente
-    let diasString;
-    if (typeof dias === "string") {
-      diasString = dias; // Se já for uma string com os dias separados por vírgula
-    } else if (Array.isArray(dias)) {
-      // Caso 'days' seja um array, transforme-o em uma string
-      diasString = dias.join(", ");
-    }
-    // Verificar se o tempo está dentro do intervalo permitido
-    const isWithinTimeRange = (time) => {
-      const [hours, minutes] = time.split(":").map(Number);
-      const totalMinutes = hours * 60 + minutes;
-      return totalMinutes >= 7.5 * 60 && totalMinutes <= 23 * 60;
-    };
 
-    // Verificar se o tempo de início e término está dentro do intervalo permitido
-    if (!isWithinTimeRange(timeStart) || !isWithinTimeRange(timeEnd)) {
-      return res.status(400).json({
-        error:
-          "A sala de aula só pode ser reservada dentro do intervalo de 7:30 às 23:00",
-      });
+module.exports = class ControllerReserva {
+  //Create Reserva
+  static async createReserva(req, res) {
+    const { fk_id_periodo, fk_id_user, fk_id_sala, dias, data_inicio, data_fim } =
+    req.body;
+      console.log(req.body)
+
+    const validation = validateReserva({
+      fk_id_periodo,
+      fk_id_user,
+      fk_id_sala,
+      dias,
+      data_inicio,
+      data_fim,
+    });
+
+    if (validation) {
+      return res.status(400).json(validation);
     }
 
     try {
-      const overlapQuery = `
-    SELECT * FROM reserva
-    WHERE 
-        fk_id_sala = '${fk_id_sala}'
-        AND (
-            (data_inicio <= '${data_fim}' AND data_fim >= '${data_inicio}')
+      const usuario = await queryAsync(
+        "SELECT id_user FROM user WHERE id_user = ?",
+        [fk_id_user]
+      );
+      if (usuario.length === 0) {
+        return res.status(400).json({ error: "Usuário não encontrado" });
+      }
+
+      const sala = await queryAsync(
+        "SELECT id_sala FROM sala WHERE id_sala = ?",
+        [fk_id_sala]
+      );
+      if (sala.length === 0) {
+        return res.status(400).json({ error: "Sala não encontrada" });
+      }
+
+      const conflito = await queryAsync(
+        `
+        SELECT id_reserva FROM reserva
+        WHERE fk_id_sala = ? AND dias = ? AND (
+          (data_inicio < ? AND data_fim > ?) OR
+          (data_inicio < ? AND data_fim > ?) OR
+          (data_inicio >= ? AND data_inicio < ?) OR
+          (data_fim > ? AND data_fim <= ?)
         )
-       
-        AND (
-            (dias LIKE '%Seg%' AND '${diasString}' LIKE '%Seg%') OR
-            (dias LIKE '%Ter%' AND '${diasString}' LIKE '%Ter%') OR
-            (dias LIKE '%Qua%' AND '${diasString}' LIKE '%Qua%') OR 
-            (dias LIKE '%Qui%' AND '${diasString}' LIKE '%Qui%') OR
-            (dias LIKE '%Sex%' AND '${diasString}' LIKE '%Sex%') OR
-            (dias LIKE '%Sab%' AND '${diasString}' LIKE '%Sab%')
-        )`;
+      `,
+        [
+          fk_id_sala,
+          dias,
+          data_inicio,
+          data_inicio,
+          data_inicio,
+          data_fim,
+          data_inicio,
+          data_fim,
+          data_inicio,
+          data_fim,
+        ]
+      );
 
-      connect.query(overlapQuery, function (err, results) {
-        if (err) {
-          console.log(err);
-          return res
-            .status(500)
-            .json({ error: "Erro ao verificar agendamento existente" });
-        }
+      if (conflito.length > 0) {
+        return res
+          .status(400)
+          .json({ error: "A sala já está reservada neste dia e horário." });
+      }
 
-        // Se a consulta retornar algum resultado, significa que já existe um agendamento
-        if (results.length > 0) {
-          return res.status(400).json({
-            error:
-              "Já existe um agendamento para os mesmos dias, sala e horários",
-          });
-        }
+      const query = `
+        INSERT INTO reserva (fk_id_periodo, fk_id_user, fk_id_sala, dias, data_inicio, data_fim)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+      const values = [fk_id_periodo, fk_id_user, fk_id_sala, dias, data_inicio, data_fim];
 
-        // Caso contrário, prossegue com a inserção na tabela
-        const insertQuery = `
-                INSERT INTO schedule (data_inicio, data_fim, dias, fk_id_user, fk_id_sala, fk_id_periodo)
-                VALUES (
-                    '${data_inicio}',
-                    '${data_fim}',
-                    '${dias}',
-                    '${fk_id_user}',
-                    '${fk_id_sala}',
-                    '${fk_id_periodo}'
-                    
-                )
-            `;
+      const result = await queryAsync(query, values);
 
-        // Executa a consulta de inserção
-        connect.query(insertQuery, function (err) {
-          if (err) {
-            console.log(err);
-            return res
-              .status(500)
-              .json({ error: "Erro ao cadastrar agendamento" });
-          }
-          console.log("Agendamento cadastrado com sucesso");
-          return res
-            .status(201)
-            .json({ message: "Agendamento cadastrado com sucesso" });
-        });
+      return res.status(201).json({
+        message: "Reserva criada com sucesso",
+        id_reserva: result.insertId,
       });
     } catch (error) {
-      console.error("Erro ao executar a consulta:", error);
-      res.status(500).json({ error: "Erro interno do servidor" });
+      console.error("Erro ao criar reserva:", error); // já imprime no terminal
+      return res.status(500).json({ 
+        error: "Erro ao criar reserva", 
+        detalhe: error.message || error 
+      });
     }
   }
 
-  static async getSchedulesByIdClassroomRanges(req, res) {
-    const classroomID = req.params.id;
-    const { weekStart, weekEnd } = req.query; // Variavel para armazenar a semana selecionada
-    console.log(weekStart + " " + weekEnd);
-    // Consulta SQL para obter todos os agendamentos para uma determinada sala de aula
-    const query = `
-    SELECT reserva.*, fk_id_user.nome AS userName
-    FROM reserva
-    JOIN user ON reserva.fk_id_user = user.id
-    WHERE fk_id_sala = '${classroomID}'
-    AND (data_inicio <= '${weekEnd}' AND data_fim >= '${weekStart}')
-`;
+  //Update Reserva
+  static async updateReserva(req, res) {
+    const { dias, data_inicio, data_fim } = req.body;
+    const reservaId = req.params.id_reserva;
+
+    const validation = validateReserva({
+      fk_id_user: 1,
+      fk_id_sala: 1,
+      dias,
+      data_inicio,
+      data_fim,
+    });
+
+    if (validation) {
+      return res.status(400).json(validation);
+    }
 
     try {
-      // Executa a consulta
-      connect.query(query, function (err, results) {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ error: "Erro interno do servidor" });
-        }
+      const reservaExistente = await queryAsync(
+        "SELECT fk_id_sala FROM reserva WHERE id_reserva = ?",
+        [reservaId]
+      );
 
-        // Objeto para armazenar os agendamentos organizados por dia da semana e intervalo de horário
-        const schedulesByDayAndTimeRange = {
-          Seg: {
-            "07:30 - 09:30": [],
-            "09:30 - 11:30": [],
-            "12:30 - 15:30": [],
-            "15:30 - 17:30": [],
-            "19:00 - 22:00": [],
-          },
-          Ter: {
-            "07:30 - 09:30": [],
-            "09:30 - 11:30": [],
-            "12:30 - 15:30": [],
-            "15:30 - 17:30": [],
-            "19:00 - 22:00": [],
-          },
-          Qua: {
-            "07:30 - 09:30": [],
-            "09:30 - 11:30": [],
-            "12:30 - 15:30": [],
-            "15:30 - 17:30": [],
-            "19:00 - 22:00": [],
-          },
-          Qui: {
-            "07:30 - 09:30": [],
-            "09:30 - 11:30": [],
-            "12:30 - 15:30": [],
-            "15:30 - 17:30": [],
-            "19:00 - 22:00": [],
-          },
-          Sex: {
-            "07:30 - 09:30": [],
-            "09:30 - 11:30": [],
-            "12:30 - 15:30": [],
-            "15:30 - 17:30": [],
-            "19:00 - 22:00": [],
-          },
-          Sab: {
-            "07:30 - 09:30": [],
-            "09:30 - 11:30": [],
-            "12:30 - 15:30": [],
-            "15:30 - 17:30": [],
-            "19:00 - 22:00": [],
-          },
-        };
+      if (reservaExistente.length === 0) {
+        return res.status(404).json({ error: "Reserva não encontrada" });
+      }
 
-        // Organiza os agendamentos pelos dias da semana e intervalo de horário
-        splitDaysSchedule;
-        results.forEach((reserva) => {
-          const dias = reserva.dias.split(", ");
-          const timeRanges = [
-            "07:30 - 09:30",
-            "09:30 - 11:30",
-            "12:30 - 15:30",
-            "15:30 - 17:30",
-            "19:00 - 22:00",
-          ];
-          days.forEach((dia) => {
-            timeRanges.forEach((timeRange) => {
-              if (isInTimeRange(resrva.fk_id_periodo, timeRange)) {
-                schedulesByDayAndTimeRange[day][timeRange].push(schedule);
-              }
-            });
-          });
-        });
+      const { fk_id_sala } = reservaExistente[0];
 
-        // Ordena os agendamentos dentro de cada lista com base no timeStart
-        Object.keys(schedulesByDayAndTimeRange).forEach((day) => {
-          Object.keys(schedulesByDayAndTimeRange[day]).forEach((timeRange) => {
-            schedulesByDayAndTimeRange[day][timeRange].sort((a, b) => {
-              const timeStartA = new Date(`1970-01-01T${a.timeStart}`);
-              const timeStartB = new Date(`1970-01-01T${b.timeStart}`);
-              return timeStartA - timeStartB;
-            });
-          });
-        });
+      const conflito = await queryAsync(
+        `
+        SELECT id_reserva FROM reserva
+        WHERE fk_id_sala = ? AND dias = ? AND id_reserva != ? AND (
+          (data_inicio < ? AND data_fim > ?) OR
+          (data_inicio < ? AND data_fim > ?) OR
+          (data_inicio >= ? AND data_inicio < ?) OR
+          (data_fim > ? AND data_fim <= ?)
+        )
+        `,
+        [
+          fk_id_sala,
+          dias,
+          reservaId,
+          data_inicio,
+          data_inicio,
+          data_inicio,
+          data_fim,
+          data_inicio,
+          data_fim,
+          data_inicio,
+          data_fim,
+        ]
+      );
 
-        // Retorna os agendamentos organizados por dia da semana e intervalo de horário
-        return res.status(200).json({ schedulesByDayAndTimeRange });
-      });
+      if (conflito.length > 0) {
+        return res
+          .status(400)
+          .json({ error: "A sala já está reservada neste dia e horário." });
+      }
+
+      await queryAsync(
+        `
+        UPDATE reserva 
+        SET dias = ?, data_inicio = ?, data_fim = ?
+        WHERE id_reserva = ?
+        `,
+        [dias, data_inicio, data_fim, reservaId]
+      );
+
+      return res
+        .status(200)
+        .json({ message: "Reserva atualizada com sucesso" });
+
     } catch (error) {
       console.error("Erro ao executar a consulta:", error);
       return res.status(500).json({ error: "Erro interno do servidor" });
@@ -231,10 +201,13 @@ module.exports = class scheduleController {
     const classroomID = req.params.id;
 
     const query = `
-      SELECT schedule.*, user.name AS userName
-      FROM schedule
-      JOIN user ON schedule.user = user.cpf
-      WHERE classroom = ?
+
+      SELECT r.id_reserva, r.fk_id_user, r.fk_id_sala, r.dias, r.data_inicio, r.data_fim, 
+      u.nome AS nomeUsuario, s.numero AS salaNome
+      FROM reserva r
+      INNER JOIN usuario u ON r.fk_id_user = u.id_user
+      INNER JOIN sala s ON r.fk_id_sala = s.id_sala
+
     `;
 
     try {
@@ -362,3 +335,32 @@ module.exports = class scheduleController {
     }
   }
 };
+
+
+// Função auxiliar que formata os campos de data e horário de uma reserva
+function reservaFormat(reserva) {
+  // Se o campo 'dias' for do tipo Date, converte para o formato YYYY-MM-DD
+  if (reserva.dias instanceof Date) {
+    reserva.dias = reserva.dias.toISOString().split("T")[0]; // Pega apenas a parte da data
+  }
+
+  // Se o campo 'dataInicio' for Date, extrai apenas o horário no formato HH:MM:SS
+  if (reserva.data_inicio instanceof Date) {
+    reserva.horarioInicio = reserva.data_inicio
+      .toISOString()
+      .split("T")[1]
+      .split(".")[0]; // Pega apenas a parte de horário
+  }
+
+  // Mesmo processo para 'dataFim'
+  if (reserva.data_fim instanceof Date) {
+    reserva.data_fim = reserva.data_fim
+      .toISOString()
+      .split("T")[1]
+      .split(".")[0]; // Pega apenas a parte de horário
+  }
+
+  // Retorna o objeto reserva com os campos formatados
+  return reserva;
+}
+

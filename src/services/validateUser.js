@@ -17,6 +17,10 @@ module.exports = function validateUser({
     if (!email.includes("@")) {
       return { error: "Email inválido. Deve conter @" };
     }
+
+     if (!email.endsWith("@docente.senai.br")) {
+    return { error: "O email deve terminar com @docente.senai.br" };
+  }
   
     return null; // Retorna null se não houver erro
   };

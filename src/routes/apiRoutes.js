@@ -17,18 +17,25 @@ router.delete("/user/:id", verifyJWT, authorizeRole("admin"), userController.del
 // Salas
 router.post("/sala/", verifyJWT, authorizeRole("admin"), salaController.createSala);
 router.get("/sala/", verifyJWT, salaController.getAllSalas);
-router.get("/sala/bloco/:bloco", verifyJWT, salaController.getSalaByBloco);
-router.get("/sala/id/:numero", verifyJWT, salaController.getSalaById);
-router.put("/sala/", verifyJWT, authorizeRole("admin"), salaController.updateSala);
-router.delete("/sala/:numero", verifyJWT, authorizeRole("admin"), salaController.deleteSala);
 
-// Períodos
-router.post("/periodo/", verifyJWT, authorizeRole("admin"), periodoController.createPeriodo);
-router.get("/periodo/", verifyJWT, periodoController.getAllPeriodos);
-router.get("/periodo/:id", verifyJWT, periodoController.getPeriodoById);
-router.put("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoController.updatePeriodo);
-router.delete("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoController.deletePeriodo);
+router.get("/sala/:bloco", salaController.getSalaByBloco);
+router.get("/sala/:numero", verifyJWT, salaController.getSalaById);
+router.put("/sala/", verifyJWT,authorizeRole("admin"), salaController.updateSala);
+router.delete("/sala/:numero", verifyJWT,authorizeRole("admin"), salaController.deleteSala);
+router.get("/salas/disponiveis", salaController.getSalasDisponiveisPorData);
 
+//Periodo
+router.post("/periodo/", periodoController.createPeriodo);
+router.get("/periodo/", periodoController.getAllPeriodos);
+router.get("/periodo/:id", periodoController.getPeriodoById);
+router.put("/periodo/:id", periodoController.updatePeriodo);
+router.delete("/periodo/:id", periodoController.deletePeriodo);
+
+//Reserva
+router.post("/reserva/", reservaController.createReserva);
+router.get("/reserva/", reservaController.getReservas);
+router.put("/reserva/", reservaController.updateReserva);
+router.delete("/reserva/",reservaController.deleteReserva);
 
 
 //Reserva
