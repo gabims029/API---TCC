@@ -2,7 +2,9 @@ const jwt = require("jsonwebtoken");
 
 function verifyJWT(req, res, next) {
 
+
   const token = req.headers["authorization"]; // token puro
+
 
 
   if (!token) {
@@ -17,9 +19,11 @@ function verifyJWT(req, res, next) {
     }
 
 
+
     // Injeta usuário de forma consistente
     req.userId = decoded.id;          // id do usuário
     req.user = { tipo: decoded.tipo.toLowerCase() }; // tipo do usuário em minúsculo
+
 
 
     next();

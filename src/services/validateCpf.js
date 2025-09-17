@@ -2,6 +2,7 @@ const connect = require("../db/connect");
 
 module.exports = async function validateCpf(cpf, userId = null) {
   return new Promise((resolve, reject) => {
+
     if (!validarCPF(cpf)) {
       return resolve({ error: "Informe um CPF valido" });
     }
@@ -18,6 +19,7 @@ module.exports = async function validateCpf(cpf, userId = null) {
         } else if (!userId) {
           return resolve({ error: "CPF já cadastrado" });
         }
+
       }
 
       resolve(null);
@@ -26,7 +28,11 @@ module.exports = async function validateCpf(cpf, userId = null) {
 };
 
 function validarCPF(cpf) {
+
   cpf = cpf.replace(/[^\d]+/g, "");
+
+  cpf = cpf.replace(/[^\d]+/g, '');
+
   if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
 
   const calcularDigito = (base, pesoInicial) => {
