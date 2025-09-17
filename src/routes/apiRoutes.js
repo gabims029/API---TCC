@@ -20,13 +20,13 @@ router.delete("/user/:id", verifyJWT, authorizeRole("admin"), userController.del
 // A rota mais específica deve vir primeiro para evitar conflitos
 router.get("/salas/disponiveis", salaController.getSalasDisponiveisPorData);
 
-// Rotas genéricas com parâmetros
+
 // As rotas com parâmetros de bloco e número não podem ter o mesmo padrão.
 // O mais comum é usar um prefixo para diferenciar. Por exemplo:
 router.get("/sala/bloco/:bloco", verifyJWT, salaController.getSalaByBloco);
 router.get("/sala/numero/:numero", verifyJWT, salaController.getSalaById);
 
-// Rotas sem parâmetros
+
 router.post("/sala/", verifyJWT, authorizeRole("admin"), salaController.createSala);
 router.get("/sala/", verifyJWT, salaController.getAllSalas);
 router.put("/sala/", verifyJWT, authorizeRole("admin"), salaController.updateSala);
