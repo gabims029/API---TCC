@@ -1,18 +1,34 @@
-// Importações necessárias
 const connect = require("../db/connect");
-const validateReserva = require("../services/validateReserva");
-const listarReservasPorUsuario = require("../services/listarReservasPorUsuario"); //Procedure
-const getHorariosSala = require("../services/getHorariosSala"); //Procedure
+const splitDaysSchedule = require("../services/splitDaysSchedule");
 
-// Função auxiliar para usar Promises com consultas SQL
-const queryAsync = (query, values) => {
-  return new Promise((resolve, reject) => {
-    connect.query(query, values, (err, results) => {
-      if (err) reject(err);
-      else resolve(results);
-    });
-  });
-};
+// Verificar se o horário de início de um agendamento está dentro de um intervalo de tempo
+function isInTimeRange(timeStart, timeRange) {
+  const [start, end] = timeRange.split(" - ");
+  const startTime = new Date(`1970-01-01T${start}`).getTime();
+  const endTime = new Date(`1970-01-01T${end}`).getTime();
+  const scheduleTime = new Date(`1970-01-01T${timeStart}`).getTime();
+  return scheduleTime >= startTime && scheduleTime < endTime;
+}
+
+module.exports = class scheduleController {
+  static async createSchedule(req, res) {
+    const { data_inicio, data_fim, dias, fk_id_user, fk_id_sala, fk_id_periodo } =
+      req.body;
+    // Verificar se todos os campos estão preenchidos
+    // Verificar se todos os campos estão preenchidos
+    if (
+      !data_inicio ||
+      !data_fim ||
+      !dias ||
+      !fk_id_user ||
+      !fk_id_sala ||
+      !fk_id_periodo 
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Todos os campos devem ser preenchidos" });
+    }
+
 
 module.exports = class ControllerReserva {
   //Create Reserva
@@ -174,107 +190,152 @@ module.exports = class ControllerReserva {
       return res
         .status(200)
         .json({ message: "Reserva atualizada com sucesso" });
+
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Erro ao atualizar reserva" });
+      console.error("Erro ao executar a consulta:", error);
+      return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
 
-  //Get Reservas
-  static async getReservas(req, res) {
+  static async getSchedulesByIdClassroom(req, res) {
+    const classroomID = req.params.id;
+
     const query = `
+
       SELECT r.id_reserva, r.fk_id_user, r.fk_id_sala, r.dias, r.data_inicio, r.data_fim, 
       u.nome AS nomeUsuario, s.numero AS salaNome
       FROM reserva r
       INNER JOIN usuario u ON r.fk_id_user = u.id_user
       INNER JOIN sala s ON r.fk_id_sala = s.id_sala
+
     `;
 
     try {
-      const results = await queryAsync(query);
+      const results = await new Promise((resolve, reject) => {
+        connect.query(query, [classroomID], (err, results) => {
+          if (err) return reject(err);
+          resolve(results);
+        });
+      });
 
-      const reservasFormatadas = results.map((reserva) =>
-        reservaFormat(reserva)
-      );
-
-      return res
-        .status(200)
-        .json({ message: "Lista de Reservas", reservas: reservasFormatadas });
+      const schedulesByDay = splitDaysSchedule(results);
+      return res.status(200).json({ schedulesByDay });
     } catch (error) {
-      console.error(error);
+      console.error("Erro ao executar a consulta:", error);
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
 
-  //Delete Reserva
-  static async deleteReserva(req, res) {
-    const reservaId = req.params.id_reserva;
-    const query = `DELETE FROM reserva WHERE id_reserva = ?`;
+  static async getSchedulesByUserCPF(req, res) {
+    const userCPF = req.params.cpf;
+
+    console.log("CPF: ", userCPF);
+
+    const query = `
+      SELECT schedule.*, classroom.number AS classroomName, user.name AS userName
+      FROM schedule
+      JOIN user ON schedule.user = user.cpf
+      JOIN classroom ON schedule.classroom = classroom.number
+      WHERE schedule.user = ?
+    `;
 
     try {
-      const results = await queryAsync(query, [reservaId]);
+      connect.query(query, [userCPF], function (err, results) {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ error: "Erro interno do servidor" });
+        }
 
-      if (results.affectedRows === 0) {
-        return res.status(404).json({ error: "Reserva não encontrada" });
-      }
+        if (results.length === 0) {
+          return res
+            .status(404)
+            .json({ error: "Nenhuma reserva encontrada para esse usuário" });
+        }
 
-      return res.status(200).json({ message: "Reserva excluída com sucesso" });
+        const schedulesByDay = {
+          Seg: [],
+          Ter: [],
+          Qua: [],
+          Qui: [],
+          Sex: [],
+          Sab: [],
+        };
+
+        results.forEach((schedule) => {
+          const diasSemana = schedule.days.split(","); // Ex: ["Seg", "Qua"]
+
+          diasSemana.forEach((dia) => {
+            if (schedulesByDay[dia]) {
+              schedulesByDay[dia].push({
+                id: schedule.id,
+                nome: schedule.userName,
+                classroomName: schedule.classroomName,
+                horaInicio: schedule.timeStart,
+                horaFim: schedule.timeEnd,
+              });
+            }
+          });
+        });
+
+        return res.status(200).json({ schedule: schedulesByDay });
+      });
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Erro interno no servidor" });
+      console.log("Erro ao executar a consulta:", error);
+      return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
 
-  //Get Horarios Sala
-  static async getHorariosSala(req, res) {
-    const { id_sala, dias } = req.params;
-
-    if (!id_sala || !dias) {
-      return res
-        .status(400)
-        .json({ error: "Parâmetros 'id_sala' e 'data' são obrigatórios." });
-    }
-
+  static async getAllSchedules(req, res) {
     try {
-      const horarios = await getHorariosSala(id_sala, dias);
-      return res.status(200).json({
-        sala: id_sala,
-        data,
-        horarios,
+      // Consulta SQL para obter todos os agendamentos
+      const query = `
+      SELECT schedule.*, user.name AS userName
+      FROM schedule
+      JOIN user ON schedule.user = user.cpf
+    `;
+
+      const results = await new Promise((resolve, reject) => {
+        connect.query(query, (err, results) => {
+          if (err) return reject(err);
+          resolve(results);
+        });
       });
+
+      const schedulesByDay = splitDaysSchedule(results);
+      return res.status(200).json({ schedulesByDay });
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Erro ao obter horários da sala." });
+      console.error("Erro ao executar a consulta:", error);
+      return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
 
-  //Get Reservas Por Usuario - PROCEDURE
-  static async getReservasPorUsuario(req, res) {
-    const { id_user } = req.params;
-
-    if (!id_user) {
-      return res.status(400).json({ error: "ID do usuário é obrigatório." });
-    }
+  static async deleteSchedule(req, res) {
+    const scheduleId = req.params.id;
+    const query = `DELETE FROM schedule WHERE id = ?`;
+    const values = [scheduleId];
 
     try {
-      const reservas = await listarReservasPorUsuario(id_user);
+      connect.query(query, values, function (err, results) {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ error: "Erro interno do servidor" });
+        }
 
-      const reservasFormatadas = reservas.map((reserva) =>
-        reservaFormat(reserva)
-      );
+        if (results.affectedRows === 0) {
+          return res.status(404).json({ error: "Agendamento não encontrado" });
+        }
 
-      return res.status(200).json({
-        message: `Reservas do usuário ${id_user}`,
-        reservas: reservasFormatadas,
+        return res
+          .status(200)
+          .json({ message: "Agendamento excluído com ID: " + scheduleId });
       });
     } catch (error) {
-      console.error(error);
-      return res
-        .status(500)
-        .json({ error: "Erro ao buscar reservas do usuário." });
+      console.error("Erro ao executar a consulta:", error);
+      return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
 };
+
 
 // Função auxiliar que formata os campos de data e horário de uma reserva
 function reservaFormat(reserva) {
@@ -302,3 +363,4 @@ function reservaFormat(reserva) {
   // Retorna o objeto reserva com os campos formatados
   return reserva;
 }
+
