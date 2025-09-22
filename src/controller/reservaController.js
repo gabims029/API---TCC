@@ -344,4 +344,3 @@ function reservaFormat(reserva) {
   // Retorna o objeto reserva com os campos formatados
   return reserva;
 }
-
