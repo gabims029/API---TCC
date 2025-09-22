@@ -228,69 +228,46 @@ module.exports = class ControllerReserva {
     }
   }
 
-  static async getSchedulesByUserCPF(req, res) {
-    const userCPF = req.params.cpf;
+  static async getSchedulesByUserID(req, res) {
+  const userId = req.params.id_user;
 
-    console.log("CPF: ", userCPF);
+  console.log("ID do usuário: ", userId);
 
-    const query = `
-      SELECT schedule.*, classroom.number AS classroomName, user.name AS userName
-      FROM schedule
-      JOIN user ON schedule.user = user.cpf
-      JOIN classroom ON schedule.classroom = classroom.number
-      WHERE schedule.user = ?
-    `;
+  const query = `
+    SELECT 
+      reserva.*, 
+      sala.numero AS nomeSala, 
+      sala.descricao AS descricaoSala,
+      user.nome AS nomeUsuario,
+      periodo.horario_inicio, 
+      periodo.horario_fim
+    FROM reserva
+    JOIN user ON reserva.fk_id_user = user.id_user
+    JOIN sala ON reserva.fk_id_sala = sala.id_sala
+    JOIN periodo ON reserva.fk_id_periodo = periodo.id_periodo
+    WHERE reserva.fk_id_user = ?
+  `;
 
-    try {
-      connect.query(query, [userCPF], function (err, results) {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ error: "Erro interno do servidor" });
-        }
+  try {
+    connect.query(query, [userId], function (err, results) {
+      if (err) {
+        console.error("Erro ao buscar reservas:", err);
+        return res.status(500).json({ error: "Erro interno do servidor" });
+      }
 
-        if (results.length === 0) {
-          return res
-            .status(404)
-            .json({ error: "Nenhuma reserva encontrada para esse usuário" });
-        }
+      if (results.length === 0) {
+        return res
+          .status(404)
+          .json({ error: "Nenhuma reserva encontrada para esse usuário" });
+      }
 
-        const schedulesByDay = {
-          Seg: [],
-          Ter: [],
-          Qua: [],
-          Qui: [],
-          Sex: [],
-          Sab: [],
-        };
-
-        results.forEach((schedule) => {
-          try {
-    const dias = (schedule.days || schedule.dias).split(",");
-    // lógica aqui...
-  } catch (e) {
-    console.error("Erro com schedule:", schedule);
+      return res.status(200).json({ reservas: results });
+    });
+  } catch (error) {
+    console.log("Erro inesperado:", error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
   }
-
-          diasSemana.forEach((dia) => {
-            if (schedulesByDay[dia]) {
-              schedulesByDay[dia].push({
-                id: schedule.id,
-                nome: schedule.userName,
-                classroomName: schedule.classroomName,
-                horaInicio: schedule.timeStart,
-                horaFim: schedule.timeEnd,
-              });
-            }
-          });
-        });
-
-        return res.status(200).json({ schedule: schedulesByDay });
-      });
-    } catch (error) {
-      console.log("Erro ao executar a consulta:", error);
-      return res.status(500).json({ error: "Erro interno do servidor" });
-    }
-  }
+}
 
   static async getAllReservas(req, res) {
     try {
@@ -317,35 +294,35 @@ JOIN user ON reserva.fk_id_user = user.id_user
   }
 
   static async deleteSchedule(req, res) {
-  const reservaId = req.params.id_reserva; // Rota deve ter o mesmo nome!
+    const reservaId = req.params.id_reserva; // Rota deve ter o mesmo nome!
 
-  if (!reservaId) {
-    return res.status(400).json({ error: "ID da reserva é obrigatório" });
+    if (!reservaId) {
+      return res.status(400).json({ error: "ID da reserva é obrigatório" });
+    }
+
+    const query = `DELETE FROM reserva WHERE id_reserva = ?`;
+    const values = [reservaId];
+
+    try {
+      connect.query(query, values, function (err, results) {
+        if (err) {
+          console.error("Erro no DELETE:", err);
+          return res.status(500).json({ error: "Erro interno do servidor" });
+        }
+
+        if (results.affectedRows === 0) {
+          return res.status(404).json({ error: "Agendamento não encontrado" });
+        }
+
+        return res
+          .status(200)
+          .json({ message: "Agendamento excluído com ID: " + reservaId });
+      });
+    } catch (error) {
+      console.error("Erro ao executar a consulta:", error);
+      return res.status(500).json({ error: "Erro interno do servidor" });
+    }
   }
-
-  const query = `DELETE FROM reserva WHERE id_reserva = ?`;
-  const values = [reservaId];
-
-  try {
-    connect.query(query, values, function (err, results) {
-      if (err) {
-        console.error("Erro no DELETE:", err);
-        return res.status(500).json({ error: "Erro interno do servidor" });
-      }
-
-      if (results.affectedRows === 0) {
-        return res.status(404).json({ error: "Agendamento não encontrado" });
-      }
-
-      return res
-        .status(200)
-        .json({ message: "Agendamento excluído com ID: " + reservaId });
-    });
-  } catch (error) {
-    console.error("Erro ao executar a consulta:", error);
-    return res.status(500).json({ error: "Erro interno do servidor" });
-  }
-}
 };
 
 // Função auxiliar que formata os campos de data e horário de uma reserva
