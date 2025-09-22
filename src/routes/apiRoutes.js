@@ -16,7 +16,6 @@ router.delete("/user/:id", verifyJWT, userController.deleteUser);
 
 
 
-// Salas (Routes consolidadas e conflitos resolvidos)
 // A rota mais específica deve vir primeiro para evitar conflitos
 router.get("/salas/disponiveis", salaController.getSalasDisponiveisPorData);
 
@@ -40,6 +39,9 @@ router.get("/periodo/", verifyJWT, periodoController.getAllPeriodos);
 router.get("/periodo/:id", verifyJWT, periodoController.getPeriodoById);
 router.put("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoController.updatePeriodo);
 router.delete("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoController.deletePeriodo);
+router.get("/periodo/status", verifyJWT, periodoController.getPeriodoStatus);
+
+
 
 
 // Reservas (Routes consolidadas e com segurança aplicada)
