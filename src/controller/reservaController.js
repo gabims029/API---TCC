@@ -21,9 +21,6 @@ function isInTimeRange(timeStart, timeRange) {
 }
 
 module.exports = class ControllerReserva {
-  //Create Reserva
-  //Create Reserva
-  //Create Reserva
   static async createReserva(req, res) {
     const {
       fk_id_periodo,
@@ -43,8 +40,11 @@ module.exports = class ControllerReserva {
       !data_inicio ||
       !data_fim
     ) {
-      return res.status(400).json({ error: "Todos os campos devem ser preenchidos" });
+      return res
+        .status(400)
+        .json({ error: "Todos os campos devem ser preenchidos" });
     }
+
     // Validar se data_inicio <= data_fim
     if (new Date(data_inicio) > new Date(data_fim)) {
       return res.status(400).json({
@@ -71,6 +71,18 @@ module.exports = class ControllerReserva {
       data_fim,
     });
     if (validation) return res.status(400).json(validation);
+
+    // Verifica se a data de início e fim são no mesmo dia, mas múltiplos dias foram escolhidos
+    if (
+      diasArray.length > 1 &&
+      new Date(data_inicio).toISOString().split("T")[0] ===
+        new Date(data_fim).toISOString().split("T")[0]
+    ) {
+      return res.status(400).json({
+        error:
+          "Você escolheu múltiplos dias, mas a data de início e fim é o mesmo dia. Por favor, escolha uma data de fim diferente.",
+      });
+    }
 
     try {
       // Verifica usuário
@@ -131,6 +143,8 @@ module.exports = class ControllerReserva {
       WHERE r.fk_id_sala = ? AND FIND_IN_SET(?, r.dias) > 0
         AND (
           (p.horario_inicio < ? AND p.horario_fim > ?) 
+          OR
+          (p.horario_inicio < ? AND p.horario_fim > ?)
         )
     `;
 
@@ -140,6 +154,8 @@ module.exports = class ControllerReserva {
           dia,
           horario_fim,
           horario_inicio,
+          horario_inicio,
+          horario_fim,
         ]);
         if (conflito.length > 0) {
           return res.status(400).json({
@@ -169,16 +185,14 @@ module.exports = class ControllerReserva {
       });
     } catch (error) {
       console.error("Erro ao criar reserva:", error);
-      return res
-        .status(500)
-        .json({
-          error: "Erro ao criar reserva",
-          detalhe: error.message || error,
-        });
+      return res.status(500).json({
+        error: "Erro ao criar reserva",
+        detalhe: error.message || error,
+      });
     }
   }
 
-  //Update Reserva
+  // Update Reserva
   static async updateReserva(req, res) {
     const { dias, data_inicio, data_fim } = req.body;
     const reservaId = req.params.id_reserva;
@@ -242,7 +256,8 @@ module.exports = class ControllerReserva {
         `
         UPDATE reserva 
         SET dias = ?, data_inicio = ?, data_fim = ?
-        WHERE id_reserva = ?
+        WHERE id_reserva =
+ ?
         `,
         [dias, data_inicio, data_fim, reservaId]
       );
