@@ -5,8 +5,10 @@ const periodoController = require("../controller/periodoController");
 const reservaController = require("../controller/reservaController");
 const authorizeRole = require("../services/authorizeRole");
 const verifyJWT = require("../services/verifyJWT");
+const upload = require("../middleware/upload"); // importando o multer
 
 // Usuários (Routes consolidadas)
+router.post("/register", upload.single("foto"), userController.createUser);
 router.post("/user/login", userController.postLogin);
 router.post("/user/", verifyJWT, authorizeRole("admin"), userController.createUser);
 router.get("/user/", verifyJWT, userController.getAllUsers);
