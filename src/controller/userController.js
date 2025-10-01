@@ -28,7 +28,7 @@ module.exports = class userController {
       }
       const hashedPassword = await bcrypt.hash(senha, SALT_ROUNDS);
 
-      const query = `INSERT INTO user (cpf, senha, email, nome, tipo) VALUES (?, ?, ?, ?, ?)`;
+      const query = `INSERT INTO user (cpf, senha, email, nome, tipo, foto) VALUES (?, ?, ?, ?, ?, ?)`;
       connect.query(
         query,
         [cpf, hashedPassword, email, nome, tipo.toLowerCase(), foto],
@@ -158,7 +158,7 @@ module.exports = class userController {
         // Atualiza os dados do usuário
 
         const queryUpdate =
-          "UPDATE user SET cpf = ?, email = ?, senha = ?, nome = ? WHERE id_user = ?";
+          "UPDATE user SET cpf = ?, email = ?, senha = ?, nome = ?, foto = ? WHERE id_user = ?";
         connect.query(
           queryUpdate,
 
