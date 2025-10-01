@@ -33,8 +33,6 @@ router.get("/sala/", verifyJWT, salaController.getAllSalas);
 router.put("/sala/", verifyJWT, authorizeRole("admin"), salaController.updateSala);
 router.delete("/sala/:numero", verifyJWT, authorizeRole("admin"), salaController.deleteSala);
 
-
-
 // Períodos (Routes consolidadas)
 router.post("/periodo/", verifyJWT, authorizeRole("admin"), periodoController.createPeriodo);
 router.get("/periodo/", verifyJWT, periodoController.getAllPeriodos);
@@ -42,13 +40,12 @@ router.get("/periodo/:id", verifyJWT, periodoController.getPeriodoById);
 router.put("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoController.updatePeriodo);
 router.delete("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoController.deletePeriodo);
 
-
 // Reservas (Routes consolidadas e com segurança aplicada)
 router.post("/reserva/", verifyJWT, reservaController.createReserva);
 router.get("/reserva/", verifyJWT, reservaController.getAllReservas);
 router.put("/reserva/:id_reserva", verifyJWT, reservaController.updateReserva);
 router.delete("/reserva/:id_reserva", verifyJWT, reservaController.deleteSchedule);
 router.get('/reserva/usuario/:id_user', verifyJWT, reservaController.getSchedulesByUserID);
-
+router.get('/reservas/data/:data', reservaController.getReservasByDate);
 
 module.exports = router;

@@ -228,6 +228,47 @@ module.exports = class ControllerReserva {
     }
   }
 
+  // Nova rota para buscar as reservas por data
+static async getReservasByDate(req, res) {
+  const { data } = req.params;  // Data passada na URL no formato 'YYYY-MM-DD'
+
+  const query = `
+    SELECT 
+      reserva.id_reserva, 
+      reserva.fk_id_user, 
+      reserva.fk_id_sala, 
+      reserva.dias, 
+      reserva.data_inicio, 
+      reserva.data_fim, 
+      user.nome AS nomeUsuario, 
+      sala.numero AS nomeSala, 
+      periodo.horario_inicio, 
+      periodo.horario_fim
+    FROM reserva
+    JOIN user ON reserva.fk_id_user = user.id_user
+    JOIN sala ON reserva.fk_id_sala = sala.id_sala
+    JOIN periodo ON reserva.fk_id_periodo = periodo.id_periodo
+    WHERE (reserva.data_inicio <= ? AND reserva.data_fim >= ?)
+  `;
+
+  try {
+    // Buscar as reservas que incluem a data fornecida
+    const results = await queryAsync(query, [data, data]);
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Nenhuma reserva encontrada para essa data." });
+    }
+
+    // Organizar as reservas por dias (se necessário, pode usar a função splitDaysSchedule)
+    const schedulesByDay = splitDaysSchedule(results);
+
+    return res.status(200).json({ schedulesByDay });
+  } catch (error) {
+    console.error("Erro ao buscar reservas por data:", error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
+
   static async getSchedulesByUserID(req, res) {
     const userId = req.params.id_user;
 
