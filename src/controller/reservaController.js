@@ -229,11 +229,11 @@ module.exports = class ControllerReserva {
   }
 
   static async getSchedulesByUserID(req, res) {
-  const userId = req.params.id_user;
+    const userId = req.params.id_user;
 
-  console.log("ID do usuário: ", userId);
+    console.log("ID do usuário: ", userId);
 
-  const query = `
+    const query = `
     SELECT 
       reserva.*, 
       sala.numero AS nomeSala, 
@@ -248,35 +248,43 @@ module.exports = class ControllerReserva {
     WHERE reserva.fk_id_user = ?
   `;
 
-  try {
-    connect.query(query, [userId], function (err, results) {
-      if (err) {
-        console.error("Erro ao buscar reservas:", err);
-        return res.status(500).json({ error: "Erro interno do servidor" });
-      }
+    try {
+      connect.query(query, [userId], function (err, results) {
+        if (err) {
+          console.error("Erro ao buscar reservas:", err);
+          return res.status(500).json({ error: "Erro interno do servidor" });
+        }
 
-      if (results.length === 0) {
-        return res
-          .status(404)
-          .json({ error: "Nenhuma reserva encontrada para esse usuário" });
-      }
+        if (results.length === 0) {
+          return res
+            .status(404)
+            .json({ error: "Nenhuma reserva encontrada para esse usuário" });
+        }
 
-      return res.status(200).json({ reservas: results });
-    });
-  } catch (error) {
-    console.log("Erro inesperado:", error);
-    return res.status(500).json({ error: "Erro interno do servidor" });
+        return res.status(200).json({ reservas: results });
+      });
+    } catch (error) {
+      console.log("Erro inesperado:", error);
+      return res.status(500).json({ error: "Erro interno do servidor" });
+    }
   }
-}
 
   static async getAllReservas(req, res) {
     try {
       // Consulta SQL para obter todos os agendamentos
       const query = `
-      SELECT reserva.*, user.nome AS usernome
-FROM reserva
-JOIN user ON reserva.fk_id_user = user.id_user
-    `;
+  SELECT 
+    reserva.*, 
+    reserva.data_inicio, 
+    reserva.data_fim, 
+    user.nome AS usernome,
+    CONCAT(periodo.horario_inicio, ' - ', periodo.horario_fim) AS periodo, 
+    sala.capacidade
+  FROM reserva
+  JOIN user ON reserva.fk_id_user = user.id_user
+  JOIN periodo ON reserva.fk_id_periodo = periodo.id_periodo
+  JOIN sala ON reserva.fk_id_sala = sala.id_sala
+`;
 
       const results = await new Promise((resolve, reject) => {
         connect.query(query, (err, results) => {

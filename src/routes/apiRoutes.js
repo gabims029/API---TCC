@@ -16,7 +16,6 @@ router.get("/user/:id", verifyJWT, userController.getUserById);
 router.put("/user/", verifyJWT, userController.updateUser);
 router.delete("/user/:id", verifyJWT, authorizeRole("admin"), userController.deleteUser);
 
-
 // Salas (Routes consolidadas e conflitos resolvidos)
 // A rota mais específica deve vir primeiro para evitar conflitos
 router.get("/salas/disponiveis", salaController.getSalasDisponiveisPorData);
