@@ -515,6 +515,7 @@ static async getReservasByDate(req, res) {
 
 // Função auxiliar que formata os campos de data e horário de uma reserva
 function reservaFormat(reserva) {
+
   return {
     ...reserva,
     dias:
@@ -531,3 +532,4 @@ function reservaFormat(reserva) {
         : reserva.data_fim,
   };
 }
+
