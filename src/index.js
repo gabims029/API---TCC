@@ -5,7 +5,7 @@ const jwt = require ("jsonwebtoken");
 const testConnect = require('./db/testeConnect')
 
 class AppController {
-    constructor() {
+    constructor() { 
       this.express = express();
       this.middlewares();
       this.routes();
