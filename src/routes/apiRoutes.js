@@ -14,20 +14,20 @@ router.post("/user/", verifyJWT, authorizeRole("admin"), userController.createUs
 router.get("/user/", verifyJWT, userController.getAllUsers);
 router.get("/user/:id", verifyJWT, userController.getUserById);
 router.put("/user/", verifyJWT, userController.updateUser);
-router.delete("/user/:id", verifyJWT, authorizeRole("admin"), userController.deleteUser);
+router.delete("/user/:id", verifyJWT, userController.deleteUser);
 
-// Salas (Routes consolidadas e conflitos resolvidos)
+
 // A rota mais específica deve vir primeiro para evitar conflitos
 router.get("/salas/disponiveis", salaController.getSalasDisponiveisPorData);
 
-// Rotas genéricas com parâmetros
+
 // As rotas com parâmetros de bloco e número não podem ter o mesmo padrão.
 // O mais comum é usar um prefixo para diferenciar. Por exemplo:
 router.get("/sala/bloco/:bloco", verifyJWT, salaController.getSalaByBloco);
 router.get("/sala/numero/:numero", verifyJWT, salaController.getSalaById);
 router.get("/salas/disponiveis", verifyJWT, salaController.getSalasDisponiveisPorData);
 
-// Rotas sem parâmetros
+
 router.post("/sala/", verifyJWT, authorizeRole("admin"), salaController.createSala);
 router.get("/sala/", verifyJWT, salaController.getAllSalas);
 router.put("/sala/", verifyJWT, authorizeRole("admin"), salaController.updateSala);
@@ -39,13 +39,18 @@ router.get("/periodo/", verifyJWT, periodoController.getAllPeriodos);
 router.get("/periodo/:id", verifyJWT, periodoController.getPeriodoById);
 router.put("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoController.updatePeriodo);
 router.delete("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoController.deletePeriodo);
+router.get("/periodo/status", verifyJWT, periodoController.getPeriodoStatus);
+
+
 
 // Reservas (Routes consolidadas e com segurança aplicada)
 router.post("/reserva/", verifyJWT, reservaController.createReserva);
 router.get("/reserva/", verifyJWT, reservaController.getAllReservas);
+
 router.put("/reserva/:id_reserva", verifyJWT, reservaController.updateReserva);
 router.delete("/reserva/:id_reserva", verifyJWT, reservaController.deleteSchedule);
 router.get('/reserva/usuario/:id_user', verifyJWT, reservaController.getSchedulesByUserID);
 router.get('/reservas/data/:data', reservaController.getReservasByDate);
+
 
 module.exports = router;

@@ -103,6 +103,56 @@ module.exports = class periodoController {
     }
   }
 
+  static async getPeriodoStatus(req, res) {
+    const { data, idSala } = req.query;
+
+    if (!data || !idSala) {
+      return res.status(400).json({ error: "Informe data e idSala" });
+    }
+
+    try {
+      // 1️⃣ Buscar todos os períodos
+      connect.query(queryPeriodos, (err, periodos) => {
+        console.log("Periodos do banco:", periodos);
+        if (err)
+          return res.status(500).json({ error: "Erro ao buscar períodos" });
+
+        if (!periodos || periodos.length === 0) {
+          return res.status(404).json({ error: "Período não encontrado" });
+        }
+
+        // 2️⃣ Buscar reservas da sala na data especificada
+        const queryReservas = `
+        SELECT fk_id_periodo
+        FROM reserva
+        WHERE fk_id_sala = ?
+          AND ? BETWEEN data_inicio AND data_fim
+      `;
+
+        connect.query(queryReservas, [idSala, data], (err, reservas) => {
+          if (err) {
+            console.error("Erro ao obter reservas:", err);
+            return res.status(500).json({ error: "Erro ao buscar reservas" });
+          }
+
+          const reservados = new Set(reservas.map((r) => r.fk_id_periodo));
+
+          const response = periodos.map((p) => ({
+            id_periodo: p.id_periodo,
+            horario_inicio: p.horario_inicio,
+            horario_fim: p.horario_fim,
+            status: reservados.has(p.id_periodo) ? "reservado" : "livre",
+          }));
+
+          return res.status(200).json({ periodos: response });
+        });
+      });
+    } catch (error) {
+      console.error("Erro interno:", error);
+      return res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  }
+
   // Deletar período
   static async deletePeriodo(req, res) {
     const { id } = req.params;
@@ -119,7 +169,9 @@ module.exports = class periodoController {
           return res.status(404).json({ error: "Período não encontrado" });
         }
 
-        return res.status(200).json({ message: "Período excluído com sucesso" });
+        return res
+          .status(200)
+          .json({ message: "Período excluído com sucesso" });
       });
     } catch (error) {
       return res.status(500).json({ error });

@@ -107,15 +107,22 @@ module.exports = class userController {
   }
 
   static async updateUser(req, res) {
-    const { cpf, email, senhaAtual, senha, nome, id } = req.body;
-    const userId = id;
 
-    // Verifica se o usuário logado é o dono do perfil
-    if (Number(userId) !== Number(req.userId)) {
-      return res
-        .status(403)
-        .json({ error: "Usuário não autorizado a atualizar este perfil" });
-    }
+  const { cpf, email, senhaAtual, senha, nome, id } = req.body;
+  const userId = id;
+
+  // Verifica se o usuário logado é o dono do perfil
+  if (Number(userId) !== Number(req.userId)) {
+    return res
+      .status(403)
+      .json({ error: "Usuário não autorizado a atualizar este perfil" });
+  }
+
+  // Validação dos dados obrigatórios
+  const validationError = validateUser({ cpf, email, senha, nome });
+  if (validationError) {
+    return res.status(400).json(validationError);
+  }
 
     // Validação dos dados obrigatórios
     const validationError = validateUser({ cpf, email, senha, nome });
@@ -152,6 +159,7 @@ module.exports = class userController {
           return res.status(401).json({ error: "Senha atual incorreta" });
         }
 
+
         // Gera hash da nova senha
         const hashedPassword = await bcrypt.hash(senha, SALT_ROUNDS);
 
@@ -184,16 +192,28 @@ module.exports = class userController {
               return res.status(404).json({ error: "Usuário não encontrado" });
             }
 
+
             return res
               .status(200)
               .json({ message: "Usuário atualizado com sucesso" });
           }
-        );
-      });
-    } catch (error) {
-      return res.status(500).json({ error });
-    }
+
+
+          if (results.affectedRows === 0) {
+            return res.status(404).json({ error: "Usuário não encontrado" });
+          }
+
+          return res
+            .status(200)
+            .json({ message: "Usuário atualizado com sucesso" });
+        }
+      );
+    });
+  } catch (error) {
+    return res.status(500).json({ error });
+
   }
+
 
   static async deleteUser(req, res) {
     const userId = req.params.id;
@@ -229,6 +249,7 @@ module.exports = class userController {
   }
 
   static async postLogin(req, res) {
+
     const { email, senha } = req.body;
 
     if (!email || !senha) {
@@ -285,9 +306,11 @@ module.exports = class userController {
 async function atualizarSenha(req, res) {
   const { id_user, senhaAtual, novaSenha } = req.body;
 
-  if (!senhaAtual || !novaSenha) {
-    return res.status(400).json({ error: "Preencha a senha atual e nova" });
-  }
+
+      if (results.length === 0) {
+        return res.status(401).json({ error: "Usuário não encontrado" });
+      }
+
 
   try {
     // 1. Buscar o hash da senha atual no banco
@@ -297,13 +320,30 @@ async function atualizarSenha(req, res) {
       if (results.length === 0)
         return res.status(404).json({ error: "Usuário não encontrado" });
 
-      const hash = results[0].senha;
 
-      // 2. Comparar senha atual digitada com o hash do banco
-      const senhaCorreta = await bcrypt.compare(senhaAtual, hash);
-      if (!senhaCorreta) {
-        return res.status(401).json({ error: "Senha atual incorreta" });
+      // segurança extra → valida se tem hash no banco
+      if (!user.senha) {
+        return res.status(500).json({ error: "Usuário sem senha cadastrada" });
       }
+
+      const senhaOK = await bcrypt.compare(senha, user.senha);
+      if (!senhaOK) {
+        return res.status(401).json({ error: "Senha incorreta" });
+      }
+
+
+      const token = jwt.sign(
+        { id: user.id_user, tipo: user.tipo.toLowerCase() },
+        process.env.SECRET,
+        { expiresIn: "1h" }
+      );
+
+      delete user.senha;
+
+      return res.status(200).json({
+        message: "Login bem-sucedido",
+        user,
+        token,
 
       // 3. Hash da nova senha
 
@@ -317,10 +357,12 @@ async function atualizarSenha(req, res) {
         return res
           .status(200)
           .json({ message: "Senha atualizada com sucesso" });
+
       });
     });
   } catch (error) {
-    console.error(error);
+    console.log("Erro ao executar a consulta:", error);
     return res.status(500).json({ error: "Erro interno do servidor" });
+  }
   }
 }
