@@ -11,9 +11,9 @@ module.exports = function splitDaysSchedule(results) {
   
     // Organiza os agendamentos pelos dias da semana
     results.forEach((schedule) => {
-      const days = schedule.days.split(", ");
-      days.forEach((day) => {
-        schedulesByDay[day].push(schedule);
+      const days = schedule.dias.split(", ");
+      days.forEach((dias) => {
+        schedulesByDay[dias].push(schedule);
       });
     });
   

@@ -64,7 +64,7 @@ module.exports = class salaController {
         WHERE s.numero NOT IN (
           SELECT r.fk_id_sala
           FROM reserva r
-          WHERE DATE(r.data_reserva) = ?
+          WHERE DATE(r.data_inicio) = ?
         )
         ORDER BY s.bloco, s.numero
       `;
