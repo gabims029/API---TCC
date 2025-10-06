@@ -5,8 +5,6 @@ function verifyJWT(req, res, next) {
 
   const token = req.headers["authorization"]; // token puro
 
-
-
   if (!token) {
     return res.status(401).json({ auth: false, message: "Token inválido" });
   }

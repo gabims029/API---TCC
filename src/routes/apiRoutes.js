@@ -47,5 +47,6 @@ router.put("/reserva/:id_reserva", verifyJWT, reservaController.updateReserva);
 router.delete("/reserva/:id_reserva", verifyJWT, reservaController.deleteSchedule);
 router.get('/reserva/usuario/:id_user', verifyJWT, reservaController.getSchedulesByUserID);
 router.get('/reservas/data/:data', reservaController.getReservasByDate);
+router.get('/reservas/bloco/:bloco', reservaController.getReservasByBloco);
 
 module.exports = router;

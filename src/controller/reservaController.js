@@ -228,6 +228,46 @@ module.exports = class ControllerReserva {
     }
   }
 
+  static async getReservasByBloco(req, res) {
+  const { bloco } = req.params; // Exemplo: 'A', 'B', 'C', etc.
+
+  const query = `
+    SELECT 
+      reserva.id_reserva,
+      reserva.fk_id_user,
+      reserva.fk_id_sala,
+      reserva.dias,
+      reserva.data_inicio,
+      reserva.data_fim,
+      user.nome AS nomeUsuario,
+      sala.numero AS numeroSala,
+      sala.descricao AS descricaoSala,
+      sala.bloco AS blocoSala,
+      periodo.horario_inicio,
+      periodo.horario_fim
+    FROM reserva
+    JOIN user ON reserva.fk_id_user = user.id_user
+    JOIN sala ON reserva.fk_id_sala = sala.id_sala
+    JOIN periodo ON reserva.fk_id_periodo = periodo.id_periodo
+    WHERE sala.bloco = ?
+  `;
+
+  try {
+    const results = await queryAsync(query, [bloco]);
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Nenhuma reserva encontrada para esse bloco." });
+    }
+
+    const schedulesByDay = splitDaysSchedule(results); // Mantém sua organização existente
+
+    return res.status(200).json({ schedulesByDay });
+  } catch (error) {
+    console.error("Erro ao buscar reservas por bloco:", error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
+
   // Nova rota para buscar as reservas por data
 static async getReservasByDate(req, res) {
   const { data } = req.params;  // Data passada na URL no formato 'YYYY-MM-DD'
