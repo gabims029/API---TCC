@@ -15,6 +15,11 @@ router.get("/user/", verifyJWT, userController.getAllUsers);
 router.get("/user/:id", verifyJWT, userController.getUserById);
 router.put("/user/", verifyJWT, userController.updateUser);
 router.delete("/user/:id", verifyJWT, userController.deleteUser);
+router.put("/user/", verifyJWT, upload.single("foto"), userController.updateUser); 
+router.get("/user/photo/:id", userController.getUserPhoto); 
+
+// ...
+module.exports = router;
 
 
 // A rota mais específica deve vir primeiro para evitar conflitos
@@ -25,9 +30,6 @@ router.get("/salas/disponiveis", salaController.getSalasDisponiveisPorData);
 // O mais comum é usar um prefixo para diferenciar. Por exemplo:
 router.get("/sala/bloco/:bloco", verifyJWT, salaController.getSalaByBloco);
 router.get("/sala/numero/:numero", verifyJWT, salaController.getSalaById);
-router.get("/salas/disponiveis", verifyJWT, salaController.getSalasDisponiveisPorData);
-
-
 router.post("/sala/", verifyJWT, authorizeRole("admin"), salaController.createSala);
 router.get("/sala/", verifyJWT, salaController.getAllSalas);
 router.put("/sala/", verifyJWT, authorizeRole("admin"), salaController.updateSala);
@@ -36,7 +38,6 @@ router.delete("/sala/:numero", verifyJWT, authorizeRole("admin"), salaController
 
 router.get("/periodo/status", verifyJWT, periodoController.getPeriodoStatus);
 router.get("/periodo/:id", verifyJWT, periodoController.getPeriodoById);
-
 router.post("/periodo/", verifyJWT, authorizeRole("admin"), periodoController.createPeriodo);
 router.get("/periodo/", verifyJWT, periodoController.getAllPeriodos);
 router.put("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoController.updatePeriodo);

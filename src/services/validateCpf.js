@@ -1,39 +1,48 @@
 const connect = require("../db/connect");
 
+// A função validateCpf agora será o módulo exportado
 module.exports = async function validateCpf(cpf, userId = null) {
+  // ⚠️ CRUCIAL: Limpa o CPF ANTES de qualquer uso posterior
+  const cpfLimpo = cpf ? cpf.replace(/[^\d]+/g, "") : ''; 
+
   return new Promise((resolve, reject) => {
 
-    if (!validarCPF(cpf)) {
+    if (!validarCPF(cpfLimpo)) { // Chama validarCPF com o CPF JÁ LIMPO
       return resolve({ error: "Informe um CPF valido" });
     }
 
-    const query = "SELECT id_user FROM user WHERE cpf = ?";
-    connect.query(query, [cpf], (err, results) => {
-      if (err) return reject("Erro ao verificar CPF");
+    // 1. Lógica de Checagem de Duplicidade
+    let query = "SELECT id_user, cpf FROM user WHERE cpf = ?";
+    let params = [cpfLimpo]; // 🛑 USA O CPF LIMPO NA CONSULTA
+
+    connect.query(query, params, (err, results) => {
+      if (err) {
+        console.error("Erro ao verificar CPF no banco de dados:", err);
+        return reject({ error: "Erro interno ao verificar CPF" });
+      }
 
       if (results.length > 0) {
         const idCadastrado = results[0].id_user;
-
-        if (userId && idCadastrado !== Number(userId)) {
+        
+        // Se estivermos atualizando E o ID do CPF encontrado não for o nosso
+        if (userId && idCadastrado !== Number(userId)) { 
           return resolve({ error: "CPF já cadastrado para outro usuário" });
-        } else if (!userId) {
+        } 
+        // Se estivermos criando (sem userId)
+        else if (!userId) { 
           return resolve({ error: "CPF já cadastrado" });
         }
-
       }
 
-      resolve(null);
+      resolve(null); // CPF válido e não duplicado (ou é o próprio usuário)
     });
   });
 };
 
-function validarCPF(cpf) {
+function validarCPF(cpfLimpo) {
+  // A string 'cpfLimpo' já deve estar limpa (apenas números)
 
-  cpf = cpf.replace(/[^\d]+/g, "");
-
-  cpf = cpf.replace(/[^\d]+/g, '');
-
-  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+  if (cpfLimpo.length !== 11 || /^(\d)\1{10}$/.test(cpfLimpo)) return false;
 
   const calcularDigito = (base, pesoInicial) => {
     let soma = 0;
@@ -44,11 +53,11 @@ function validarCPF(cpf) {
     return resto < 2 ? 0 : 11 - resto;
   };
 
-  const primeiroDigito = calcularDigito(cpf.substring(0, 9), 10);
-  const segundoDigito = calcularDigito(cpf.substring(0, 9) + primeiroDigito, 11);
+  const primeiroDigito = calcularDigito(cpfLimpo.substring(0, 9), 10);
+  const segundoDigito = calcularDigito(cpfLimpo.substring(0, 9) + primeiroDigito, 11);
 
   return (
-    parseInt(cpf[9]) === primeiroDigito &&
-    parseInt(cpf[10]) === segundoDigito
+    parseInt(cpfLimpo[9]) === primeiroDigito &&
+    parseInt(cpfLimpo[10]) === segundoDigito
   );
 }

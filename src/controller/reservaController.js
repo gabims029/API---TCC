@@ -188,39 +188,41 @@ module.exports = class ControllerReserva {
 
   static async getSchedulesByUserID(req, res) {
     const userId = req.params.id_user;
+  
+    console.log("ID do usuário: ", userId);
+  
+    const query = `
+      SELECT
+        reserva.*,
+        sala.numero AS nomeSala,
+        sala.descricao AS descricaoSala,
+        user.nome AS nomeUsuario,
+        periodo.horario_inicio,
+        periodo.horario_fim
+      FROM reserva
+      JOIN user ON reserva.fk_id_user = user.id_user
+      JOIN sala ON reserva.fk_id_sala = sala.id_sala
+      JOIN periodo ON reserva.fk_id_periodo = periodo.id_periodo
+      WHERE reserva.fk_id_user = ?
+    `;
+  
     try {
-      const results = await queryAsync(
-        `SELECT reserva.*, sala.numero AS salaNome, sala.descricao AS descricaoSala,
-                user.nome AS nomeUsuario, periodo.horario_inicio, periodo.horario_fim
-          FROM reserva
-          JOIN user ON reserva.fk_id_user = user.id_user
-          JOIN sala ON reserva.fk_id_sala = sala.id_sala
-          JOIN periodo ON reserva.fk_id_periodo = periodo.id_periodo
-          WHERE reserva.fk_id_user = ?`,
-        [userId]
-      );
-
-      if (results.length === 0) return res.status(404).json({ error: "Nenhuma reserva encontrada para esse usuário" });
-
-      const schedulesByDay = { Seg: [], Ter: [], Qua: [], Qui: [], Sex: [], Sab: [] };
-      results.forEach(reserva => {
-        const diasSemana = reserva.dias.split(",");
-        diasSemana.forEach(dia => {
-          if (schedulesByDay[dia]) {
-            schedulesByDay[dia].push({
-              id: reserva.id_reserva,
-              nome: reserva.nomeUsuario,
-              classroomName: reserva.salaNome,
-              horaInicio: reserva.data_inicio,
-              horaFim: reserva.data_fim
-            });
-          }
-        });
+      connect.query(query, [userId], function (err, results) {
+        if (err) {
+          console.error("Erro ao buscar reservas:", err);
+          return res.status(500).json({ error: "Erro interno do servidor" });
+        }
+  
+        if (results.length === 0) {
+          return res
+            .status(404)
+            .json({ error: "Nenhuma reserva encontrada para esse usuário" });
+        }
+  
+        return res.status(200).json({ reservas: results });
       });
-
-      return res.status(200).json({ schedule: schedulesByDay });
     } catch (error) {
-      console.error("Erro inesperado:", error);
+      console.log("Erro inesperado:", error);
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
