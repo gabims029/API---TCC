@@ -6,16 +6,19 @@ const reservaController = require("../controller/reservaController");
 const authorizeRole = require("../services/authorizeRole");
 const verifyJWT = require("../services/verifyJWT");
 const upload = require("../middleware/upload"); // importando o multer
+const authorizeSelf= require("../middleware/authorizeSelf")
 
 // Usuários (Routes consolidadas)
-router.post("/register", upload.single("foto"), userController.createUser);
 router.post("/user/login", userController.postLogin);
 router.post("/user/", verifyJWT, authorizeRole("admin"), userController.createUser);
 router.get("/user/", verifyJWT, userController.getAllUsers);
 router.get("/user/:id", verifyJWT, userController.getUserById);
-router.put("/user/", verifyJWT, userController.updateUser);
+//router.put("/user/", , userController.updateUser);
 router.delete("/user/:id", verifyJWT, userController.deleteUser);
+router.put("/user/:id", upload.single("foto"), verifyJWT, userController.updateUser);
 
+// A rota deve estar com a URL como /update/:id
+//router.put("/update/:id", verifyJWT, authorizeSelf, userController.updateUser);
 
 // A rota mais específica deve vir primeiro para evitar conflitos
 router.get("/salas/disponiveis", salaController.getSalasDisponiveisPorData);

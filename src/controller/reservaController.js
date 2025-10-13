@@ -298,48 +298,6 @@ module.exports = class ControllerReserva {
     }
   }
 
-<<<<<<< HEAD
-  static async getReservasByBloco(req, res) {
-  const { bloco } = req.params; // Exemplo: 'A', 'B', 'C', etc.
-
-  const query = `
-    SELECT 
-      reserva.id_reserva,
-      reserva.fk_id_user,
-      reserva.fk_id_sala,
-      reserva.dias,
-      reserva.data_inicio,
-      reserva.data_fim,
-      user.nome AS nomeUsuario,
-      sala.numero AS numeroSala,
-      sala.descricao AS descricaoSala,
-      sala.bloco AS blocoSala,
-      periodo.horario_inicio,
-      periodo.horario_fim
-    FROM reserva
-    JOIN user ON reserva.fk_id_user = user.id_user
-    JOIN sala ON reserva.fk_id_sala = sala.id_sala
-    JOIN periodo ON reserva.fk_id_periodo = periodo.id_periodo
-    WHERE sala.bloco = ?
-  `;
-
-  try {
-    const results = await queryAsync(query, [bloco]);
-
-    if (results.length === 0) {
-      return res.status(404).json({ error: "Nenhuma reserva encontrada para esse bloco." });
-    }
-
-    const schedulesByDay = splitDaysSchedule(results); // Mantém sua organização existente
-
-    return res.status(200).json({ schedulesByDay });
-  } catch (error) {
-    console.error("Erro ao buscar reservas por bloco:", error);
-    return res.status(500).json({ error: "Erro interno do servidor" });
-  }
-}
-=======
->>>>>>> eacb7d99fbf55889b8d0f47fa1dd2ed39f1ae366
 
   // Nova rota para buscar as reservas por data
 static async getReservasByDate(req, res) {
@@ -382,15 +340,15 @@ static async getReservasByDate(req, res) {
   }
 }
 
-  static async getSchedulesByUserID(req, res) {
-    const userId = req.params.id_user;
+static async getSchedulesByUserID(req, res) {
+  const userId = req.params.id_user;
 
-    console.log("ID do usuário: ", userId);
+  console.log("ID do usuário: ", userId);
 
-    const query = `
+  const query = `
     SELECT 
       reserva.*, 
-      sala.numero AS nomeSala, 
+      sala.numero AS salaNome, 
       sala.descricao AS descricaoSala,
       user.nome AS nomeUsuario,
       periodo.horario_inicio, 
@@ -402,20 +360,18 @@ static async getReservasByDate(req, res) {
     WHERE reserva.fk_id_user = ?
   `;
 
-    try {
-      connect.query(query, [userId], function (err, results) {
-        if (err) {
-          console.error("Erro ao buscar reservas:", err);
-          return res.status(500).json({ error: "Erro interno do servidor" });
-        }
-
+  try {
+    connect.query(query, [userId], function (err, results) {
+      if (err) {
+        console.error("Erro ao buscar reservas:", err);
+        return res.status(500).json({ error: "Erro interno do servidor" });
+      }
 
       if (results.length === 0) {
         return res
           .status(404)
           .json({ error: "Nenhuma reserva encontrada para esse usuário" });
       }
-
 
       const schedulesByDay = {
         Seg: [],
@@ -440,15 +396,48 @@ static async getReservasByDate(req, res) {
             });
           }
         });
-
       });
 
       return res.status(200).json({ schedule: schedulesByDay });
-    } catch (error) {
-      console.log("Erro inesperado:", error);
-      return res.status(500).json({ error: "Erro interno do servidor" });
-    }
+    });
+  } catch (error) {
+    console.log("Erro inesperado:", error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
   }
+}
+
+  // Dentro de ControllerReserva.js
+  static async getReservasByBloco(req, res) {
+  const { bloco } = req.params;
+
+  try {
+    const query = `
+      SELECT 
+        reserva.*, 
+        user.nome AS nomeUsuario, 
+        sala.numero AS nomeSala, 
+        sala.bloco,
+        periodo.horario_inicio, 
+        periodo.horario_fim
+      FROM reserva
+      JOIN user ON reserva.fk_id_user = user.id_user
+      JOIN sala ON reserva.fk_id_sala = sala.id_sala
+      JOIN periodo ON reserva.fk_id_periodo = periodo.id_periodo
+      WHERE sala.bloco = ?
+    `;
+
+    const results = await queryAsync(query, [bloco]);
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Nenhuma reserva encontrada para este bloco." });
+    }
+
+    return res.status(200).json({ reservas: results });
+  } catch (error) {
+    console.error("Erro ao buscar reservas por bloco:", error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
 
   static async getAllReservas(req, res) {
     try {
