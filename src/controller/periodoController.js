@@ -105,50 +105,61 @@ module.exports = class periodoController {
 
   static async getPeriodoStatus(req, res) {
     const { data, idSala } = req.query;
-
+  
     if (!data || !idSala) {
+      // 400 Bad Request
+      console.error("ERRO 400: Parâmetros data ou idSala ausentes.");
       return res.status(400).json({ error: "Informe data e idSala" });
     }
-
+  
+    const queryPeriodos = `SELECT * FROM periodo`; 
+  
     try {
-      // 1️⃣ Buscar todos os períodos
       connect.query(queryPeriodos, (err, periodos) => {
-        console.log("Periodos do banco:", periodos);
-        if (err)
+        
+        // *** VERIFICAÇÃO DE ERRO PRINCIPAL AQUI ***
+        if (err) {
+          // 500 Internal Server Error
+          console.error("ERRO 500 na queryPeriodos:", err);
           return res.status(500).json({ error: "Erro ao buscar períodos" });
-
+        }
+  
+        console.log("Periodos carregados com sucesso. Total:", periodos.length);
+        
         if (!periodos || periodos.length === 0) {
+          // 404 Not Found (Ocorre se a tabela está vazia)
+          console.warn("AVISO 404: Tabela 'periodo' está vazia.");
           return res.status(404).json({ error: "Período não encontrado" });
         }
-
-        // 2️⃣ Buscar reservas da sala na data especificada
+  
+        // ... o resto do código continua igual
         const queryReservas = `
-        SELECT fk_id_periodo
-        FROM reserva
-        WHERE fk_id_sala = ?
-          AND ? BETWEEN data_inicio AND data_fim
-      `;
-
+          SELECT fk_id_periodo
+          FROM reserva
+          WHERE fk_id_sala = ?
+            AND ? BETWEEN data_inicio AND data_fim
+        `;
+  
         connect.query(queryReservas, [idSala, data], (err, reservas) => {
           if (err) {
-            console.error("Erro ao obter reservas:", err);
+            console.error("ERRO 500 na queryReservas:", err);
             return res.status(500).json({ error: "Erro ao buscar reservas" });
           }
-
+          
+          // ... finaliza a resposta
           const reservados = new Set(reservas.map((r) => r.fk_id_periodo));
-
           const response = periodos.map((p) => ({
             id_periodo: p.id_periodo,
             horario_inicio: p.horario_inicio,
             horario_fim: p.horario_fim,
             status: reservados.has(p.id_periodo) ? "reservado" : "livre",
           }));
-
+          
           return res.status(200).json({ periodos: response });
         });
       });
     } catch (error) {
-      console.error("Erro interno:", error);
+      console.error("ERRO DE EXECUÇÃO:", error);
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
