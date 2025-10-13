@@ -118,11 +118,7 @@ module.exports = class userController {
       .json({ error: "Usuário não autorizado a atualizar este perfil" });
   }
 
-  // Validação dos dados obrigatórios
-  const validationError = validateUser({ cpf, email, senha, nome });
-  if (validationError) {
-    return res.status(400).json(validationError);
-  }
+ 
 
     // Validação dos dados obrigatórios
     const validationError = validateUser({ cpf, email, senha, nome });
