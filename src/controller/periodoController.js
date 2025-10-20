@@ -117,7 +117,7 @@ module.exports = class periodoController {
     try {
       connect.query(queryPeriodos, (err, periodos) => {
         
-        // *** VERIFICAÇÃO DE ERRO PRINCIPAL AQUI ***
+        
         if (err) {
           // 500 Internal Server Error
           console.error("ERRO 500 na queryPeriodos:", err);
@@ -132,7 +132,6 @@ module.exports = class periodoController {
           return res.status(404).json({ error: "Período não encontrado" });
         }
   
-        // ... o resto do código continua igual
         const queryReservas = `
           SELECT fk_id_periodo
           FROM reserva

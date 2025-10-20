@@ -9,7 +9,8 @@ const SALT_ROUNDS = 10;
 module.exports = class userController {
   // Criar usuário
   static async createUser(req, res) {
-    const { cpf, email, senha, nome, tipo } = req.body; // const fotoBuffer = req.file ? req.file.buffer : null; // captura foto
+    const { cpf, email, senha, nome, tipo } = req.body;
+    // const fotoBuffer = req.file ? req.file.buffer : null; // captura foto
     const validationError = validateUser(req.body);
     if (validationError) return res.status(400).json(validationError);
 
@@ -22,16 +23,14 @@ module.exports = class userController {
 
       const hashedPassword = await bcrypt.hash(senha, SALT_ROUNDS);
 
-      const query = `
-        INSERT INTO user (cpf, senha, email, nome, tipo, foto) 
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
+      const query = `INSERT INTO user (cpf, senha, email, nome, tipo) VALUES (?, ?, ?, ?, ?)`;
 
       connect.query(
         query,
-        [cpf, hashedPassword, email, nome, tipo.toLowerCase(), fotoBuffer],
+        [cpf, hashedPassword, email, nome, tipo],
         (err) => {
           if (err) {
+            console.error("ERRO NO CREATE USER:", err);
             if (err.code === "ER_DUP_ENTRY" && err.message.includes("email")) {
               return res.status(400).json({ error: "Email já cadastrado" });
             }
@@ -99,20 +98,20 @@ module.exports = class userController {
       id,
       cpf,
     } = req.body;
-    
+
     // 🛑 NOVIDADE: Captura a foto e o tipo do Multer (req.file)
     const fotoBuffer = req.file?.buffer || null;
-    const fotoTipo = req.file?.mimetype || null; 
+    const fotoTipo = req.file?.mimetype || null;
 
     const idUsuarioLogado = req.userId;
-    
+
     // 1. Validação de Permissão e Campos Essenciais
     if (Number(id) !== Number(idUsuarioLogado)) {
       return res
         .status(403)
         .json({ error: "Você só pode atualizar seu próprio perfil." });
     }
-    
+
     if (!id || !cpf || !email || !nome || !senhaAtual) {
       return res
         .status(400)
@@ -131,7 +130,7 @@ module.exports = class userController {
         if (results.length === 0) return res.status(404).json({ error: "Usuário não encontrado" });
 
         const senhaBanco = results[0].senha;
-        
+
         // 4. Verifica Senha Atual (OBRIGATÓRIO para qualquer alteração de dados)
         const senhaOK = await bcrypt.compare(senhaAtual, senhaBanco);
         if (!senhaOK) return res.status(401).json({ error: "Senha atual incorreta." });
@@ -146,7 +145,7 @@ module.exports = class userController {
           hashParaSalvar = await bcrypt.hash(novaSenha, SALT_ROUNDS);
         }
         setClauses.push("senha = ?");
-        values.push(hashParaSalvar); 
+        values.push(hashParaSalvar);
 
         // B. Se houver FOTO, inclui o buffer e o tipo
         if (fotoBuffer) {
@@ -187,8 +186,8 @@ module.exports = class userController {
         }
         const fotoBuffer = results[0].foto;
         // Usa o tipo salvo no banco, ou fallback para jpeg
-        const contentType = results[0].foto_tipo || "image/jpeg"; 
-        
+        const contentType = results[0].foto_tipo || "image/jpeg";
+
         res.writeHead(200, {
           "Content-Type": contentType, // <--- Usa o tipo dinâmico
           "Content-Length": fotoBuffer.length,

@@ -18,8 +18,7 @@ router.delete("/user/:id", verifyJWT, userController.deleteUser);
 router.put("/user/", verifyJWT, upload.single("foto"), userController.updateUser); 
 router.get("/user/photo/:id", userController.getUserPhoto); 
 
-// ...
-module.exports = router;
+
 
 
 // A rota mais específica deve vir primeiro para evitar conflitos
