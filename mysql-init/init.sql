@@ -132,7 +132,26 @@ LOCK TABLES `user` WRITE;
 INSERT INTO `user` VALUES (1,'Administrador','admin@docente.senai.br','$2b$10$cUCNfB8zeLxEfopVSyBtIOhmUR6vtZrvIMShv.VNHqKWmiE1.AaoK','12345678902','Admin');
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
+DELETE p1
+FROM periodo p1
+INNER JOIN periodo p2
+  ON p1.horario_inicio = p2.horario_inicio
+ AND p1.horario_fim = p2.horario_fim
+ AND p1.id_periodo > p2.id_periodo;
 
+
+delimiter //
+
+create procedure deletarUsuarioComReservas(in p_id_user int)
+begin
+  -- Excluir reservas (isso ativa a trigger de log automaticamente)
+  delete from reserva where fk_id_user = p_id_user;
+
+  -- Excluir o usuário
+  delete from user where id_user = p_id_user;
+end; //
+
+delimiter ;
 --
 -- Dumping events for database 'senai'
 --

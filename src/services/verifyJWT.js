@@ -12,6 +12,12 @@ function verifyJWT(req, res, next) {
     // Tenta verificar o token puro
     jwt.verify(token, process.env.SECRET, (err, decoded) => {
         if (err) {
+            if (err.name === "TokenExpiredError") {
+                return res
+                  .status(401) // 401 = Não autorizado
+                  .json({ auth: false, message: "Token expirado, realize a autenticação novamente" });
+              }
+              
             // 403: Proibido. Token inválido, expirado ou com chave secreta errada.
             console.error("Falha na verificação JWT:", err.message);
             return res

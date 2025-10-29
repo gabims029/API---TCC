@@ -25,6 +25,7 @@ router.get("/user/photo/:id", userController.getUserPhoto);
 router.get("/salas/disponiveis", salaController.getSalasDisponiveisPorData);
 
 
+
 // As rotas com parâmetros de bloco e número não podem ter o mesmo padrão.
 // O mais comum é usar um prefixo para diferenciar. Por exemplo:
 router.get("/sala/bloco/:bloco", verifyJWT, salaController.getSalaByBloco);
@@ -45,6 +46,7 @@ router.delete("/periodo/:id", verifyJWT, authorizeRole("admin"), periodoControll
 
 
 // Reservas (Routes consolidadas e com segurança aplicada)
+
 router.post("/reserva/", verifyJWT, reservaController.createReserva);
 router.get("/reserva/", verifyJWT, reservaController.getAllReservas);
 router.put("/reserva/:id_reserva", verifyJWT, reservaController.updateReserva);
