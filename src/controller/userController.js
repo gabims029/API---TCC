@@ -112,10 +112,12 @@ module.exports = class userController {
         .json({ error: "Você só pode atualizar seu próprio perfil." });
     }
 
+
     if (!id || !cpf || !email || !nome || !senhaAtual) {
       return res
         .status(400)
         .json({ error: "ID, CPF, Email, Nome e Senha Atual são obrigatórios." });
+
     }
 
     try {
