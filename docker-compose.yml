@@ -11,6 +11,8 @@ services:
     ## Monta o diretório atual da máquina host no diretório /usr/app dentro do container
     volumes:
       - .:/usr/app
+      - /etc/letsencrypt:/etc/letsencrypt # Monta o volume dos certificados
+    working_dir: /usr/app # Define o diretório de trabalho dentro do container
     ## Indica que o serviço app depende do serviço db
     depends_on:
       - db
