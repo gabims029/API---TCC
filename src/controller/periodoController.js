@@ -105,45 +105,54 @@ module.exports = class periodoController {
 
   static async getPeriodoStatus(req, res) {
     const { data, idSala } = req.query;
-
+  
     if (!data || !idSala) {
       return res.status(400).json({ error: "Informe data e idSala" });
     }
-
+  
+    const queryPeriodos = `SELECT * FROM periodo`;
+  
     try {
       // 1️⃣ Buscar todos os períodos
       connect.query(queryPeriodos, (err, periodos) => {
-        console.log("Periodos do banco:", periodos);
-        if (err)
+        if (err) {
+          console.error("Erro ao buscar períodos:", err);
           return res.status(500).json({ error: "Erro ao buscar períodos" });
-
-        if (!periodos || periodos.length === 0) {
-          return res.status(404).json({ error: "Período não encontrado" });
         }
-
-        // 2️⃣ Buscar reservas da sala na data especificada
+  
+        if (!periodos || periodos.length === 0) {
+          return res.status(404).json({ error: "Nenhum período encontrado" });
+        }
+  
+        // 2️⃣ Buscar reservas + nome do usuário
         const queryReservas = `
-        SELECT fk_id_periodo
-        FROM reserva
-        WHERE fk_id_sala = ?
-          AND ? BETWEEN data_inicio AND data_fim
-      `;
-
+          SELECT r.fk_id_periodo, u.nome AS nome_usuario
+          FROM reserva r
+          JOIN user u ON r.fk_id_user = u.id_user
+          WHERE r.fk_id_sala = ?
+            AND ? BETWEEN r.data_inicio AND r.data_fim
+        `;
+  
         connect.query(queryReservas, [idSala, data], (err, reservas) => {
           if (err) {
             console.error("Erro ao obter reservas:", err);
             return res.status(500).json({ error: "Erro ao buscar reservas" });
           }
-
-          const reservados = new Set(reservas.map((r) => r.fk_id_periodo));
-
+  
+          // Cria um map com { id_periodo: nome_usuario }
+          const reservasMap = new Map(
+            reservas.map((r) => [r.fk_id_periodo, r.nome_usuario])
+          );
+  
+          // Monta o retorno final
           const response = periodos.map((p) => ({
             id_periodo: p.id_periodo,
             horario_inicio: p.horario_inicio,
             horario_fim: p.horario_fim,
-            status: reservados.has(p.id_periodo) ? "reservado" : "livre",
+            status: reservasMap.has(p.id_periodo) ? "reservado" : "livre",
+            usuario: reservasMap.get(p.id_periodo) || null,
           }));
-
+  
           return res.status(200).json({ periodos: response });
         });
       });
@@ -152,6 +161,7 @@ module.exports = class periodoController {
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
+  
 
   // Deletar período
   static async deletePeriodo(req, res) {

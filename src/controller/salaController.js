@@ -50,44 +50,58 @@ module.exports = class salaController {
   }
 
   // Listar salas disponíveis por data (Já estava em async/await)
-  static async getSalasDisponiveisPorData(req, res) {
-    const { data } = req.query;
-
-    if (!data) {
-      return res.status(400).json({ error: "A data é obrigatória (formato: YYYY-MM-DD)" });
-    }
-
-    try {
-      const query = `
-        SELECT s.*
-        FROM sala s
-        WHERE s.numero NOT IN (
-          SELECT r.fk_id_sala
-          FROM reserva r
-          WHERE DATE(r.data_inicio) = ?
-        )
-        ORDER BY s.bloco, s.numero
-      `;
-      const salasDisponiveis = await queryAsync(query, [data]);
-
-      if (salasDisponiveis.length === 0) {
-        return res.status(404).json({ message: "Nenhuma sala disponível nesta data." });
-      }
-
-      const salasPorBloco = {};
-      salasDisponiveis.forEach((sala) => {
-        if (!salasPorBloco[sala.bloco]) {
-          salasPorBloco[sala.bloco] = [];
-        }
-        salasPorBloco[sala.bloco].push(sala);
-      });
-
-      res.status(200).json({ data, salasDisponiveis: salasPorBloco });
-    } catch (error) {
-      console.error("Erro ao buscar salas disponíveis:", error);
-      res.status(500).json({ error: "Erro interno do servidor ao buscar salas disponíveis." });
-    }
+static async getSalasDisponiveisPorData(req, res) {
+  const { data } = req.query;
+  if (!data) {
+    return res.status(400).json({ error: "A data é obrigatória (formato: YYYY-MM-DD)" });
   }
+
+  try {
+    // Total de períodos existentes
+    const totalPeriodosResult = await queryAsync("SELECT COUNT(*) AS total FROM periodo");
+    const totalPeriodos = totalPeriodosResult[0].total;
+
+    // Buscar todas as salas
+    const salas = await queryAsync("SELECT * FROM sala");
+
+    // Buscar quantos períodos cada sala já possui reservados na data
+    const reservas = await queryAsync(`
+      SELECT fk_id_sala, COUNT(DISTINCT fk_id_periodo) AS periodos_ocupados
+      FROM reserva
+      WHERE ? BETWEEN data_inicio AND data_fim
+      GROUP BY fk_id_sala
+    `, [data]);
+
+    //  Criar mapa de reservas
+    const mapaReservas = {};
+    reservas.forEach(r => {
+      mapaReservas[r.fk_id_sala] = r.periodos_ocupados;
+    });
+
+    //  Filtrar salas que ainda possuem pelo menos 1 período livre
+    const salasDisponiveis = salas.filter(sala => {
+      const ocupados = mapaReservas[sala.id_sala] || 0;
+      return ocupados < totalPeriodos;
+    });
+
+    if (salasDisponiveis.length === 0) {
+      return res.status(404).json({ message: "Nenhuma sala disponível nesta data." });
+    }
+
+    // Agrupar por bloco
+    const salasPorBloco = {};
+    salasDisponiveis.forEach(sala => {
+      if (!salasPorBloco[sala.bloco]) salasPorBloco[sala.bloco] = [];
+      salasPorBloco[sala.bloco].push(sala);
+    });
+
+    res.status(200).json({ data, salasDisponiveis: salasPorBloco });
+
+  } catch (error) {
+    console.error("Erro ao buscar salas disponíveis:", error);
+    res.status(500).json({ error: "Erro interno do servidor ao buscar salas disponíveis." });
+  }
+}
 
   // Buscar sala por número (Refatorado para async/await)
   static async getSalaById(req, res) {
