@@ -504,29 +504,81 @@ static async deletePeriodoReserva(req, res) {
   // --- Buscar reservas por data (DEIXADA NO FORMATO ORIGINAL) ---
   static async getReservasByDate(req, res) {
     const { data } = req.params;
+  
     try {
       const results = await queryAsync(
-        `SELECT r.*, s.numero AS salaNome, s.descricao AS descricaoSala, s.capacidade, u.nome AS nomeUsuario, p.horario_inicio, p.horario_fim
-                 FROM reserva r
-                 JOIN sala s ON r.fk_id_sala = s.id_sala
-                 JOIN user u ON r.fk_id_user = u.id_user
-                 JOIN periodo p ON r.fk_id_periodo = p.id_periodo
-                 WHERE r.data_inicio <= ? AND r.data_fim >= ?`,
-        [data, data]
+        `SELECT 
+            r.*, 
+            s.numero AS nomeSalaDisplay, 
+            s.descricao AS descricaoDetalhe, 
+            s.capacidade, 
+            u.nome AS nomeUsuario, 
+            p.horario_inicio, 
+            p.horario_fim
+         FROM reserva r
+         JOIN sala s ON r.fk_id_sala = s.id_sala
+         JOIN user u ON r.fk_id_user = u.id_user
+         JOIN periodo p ON r.fk_id_periodo = p.id_periodo
+         WHERE ? BETWEEN r.data_inicio AND r.data_fim
+         ORDER BY s.numero, p.horario_inicio;`,
+        [data]
       );
-
-      const reservaBySala = {};
-      results.forEach((reserva)=>{
-        const sala = reserva.salaNome;
-        if(!reservaBySala[sala]){
-          reservaBySala[sala]=[];
+  
+      if (results.length === 0) {
+        return res.status(200).json({ reservas: [] });
+      }
+  
+      const reservasAgrupadas = {};
+      const agora = new Date();
+  
+      results.forEach((reserva) => {
+        const nomeSalaDisplay = reserva.nomeSalaDisplay || "Sala não informada";
+        const descricaoDetalhe = reserva.descricaoDetalhe || "Sem descrição";
+  
+        // Garante o agrupamento por sala
+        const chaveSala = `${nomeSalaDisplay}-${descricaoDetalhe}`;
+        if (!reservasAgrupadas[chaveSala]) {
+          reservasAgrupadas[chaveSala] = {
+            nomeSalaDisplay,
+            descricaoDetalhe,
+            capacidade: reserva.capacidade,
+            reservas: [],
+          };
         }
-        reservaBySala[sala].push(reserva)
-      })
-      return res.status(200).json({ reservaBySala });
+  
+        // Verifica se o período já existe na lista dessa sala
+        const reservaExistente = reservasAgrupadas[chaveSala].reservas.find(
+          (r) =>
+            r.horario_inicio === reserva.horario_inicio &&
+            r.horario_fim === reserva.horario_fim
+        );
+  
+        const dataHoraFimString = data + " " + reserva.horario_fim;
+        const dataHoraFim = new Date(dataHoraFimString);
+        const passou = dataHoraFim <= agora;
+  
+        const periodo = {
+          id_reserva: reserva.id_reserva,
+          horario_inicio: reserva.horario_inicio,
+          horario_fim: reserva.horario_fim,
+          usuario: reserva.nomeUsuario,
+          passou,
+        };
+  
+        if (reservaExistente) {
+          reservaExistente.periodos.push(periodo);
+        } else {
+          reservasAgrupadas[chaveSala].reservas.push({
+            periodos: [periodo],
+          });
+        }
+      });
+  
+      return res.status(200).json({ reservas: reservasAgrupadas });
     } catch (error) {
       console.error("Erro ao buscar reservas por data:", error);
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
+  
 };
