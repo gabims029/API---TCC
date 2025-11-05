@@ -33,7 +33,7 @@ module.exports = class ControllerReserva {
       data_fim,
     } = req.body;
 
-    // 1. Validação de campos obrigatórios
+    //  Validação de campos obrigatórios
     if (
       !fk_id_periodo ||
       !fk_id_user ||
@@ -47,7 +47,7 @@ module.exports = class ControllerReserva {
         .json({ error: "Todos os campos devem ser preenchidos" });
     }
 
-    // 💡 Padronização da string 'dias'
+    //  Padronização da string 'dias'
     let diasArray;
 
     if (Array.isArray(dias)) {
@@ -75,7 +75,7 @@ module.exports = class ControllerReserva {
       });
     }
 
-    // 2. Validação de serviço
+    //  Validação de serviço
     const validation = validateReserva({
       fk_id_periodo,
       fk_id_user,
@@ -112,14 +112,14 @@ module.exports = class ControllerReserva {
 
       const { horario_inicio, horario_fim } = periodo[0];
 
-      // 3. Gera os dias válidos dentro do intervalo
+      //  Gera os dias válidos dentro do intervalo
       const start = new Date(data_inicio + "T00:00:00");
       const end = new Date(data_fim + "T00:00:00");
       const diasValidos = [];
 
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const dataFormatada = d.toISOString().split("T")[0];
-        const diaAtual = getDiaDaSemana(dataFormatada);
+        const diaAtual = getDiaDaSemana(dataFormatada); //  Retorna o dia da semana da data iterada 
 
         if (diasArray.includes(diaAtual)) {
           diasValidos.push(dataFormatada);
@@ -134,7 +134,7 @@ module.exports = class ControllerReserva {
         });
       }
 
-      // 4. Verificar conflitos para cada dia
+      //  Verificar conflitos para cada dia
       const conflitoQuery = `
         SELECT r.id_reserva
         FROM reserva AS r
@@ -324,6 +324,7 @@ module.exports = class ControllerReserva {
 
           const novoPeriodo = {
             id_reserva: reserva.id_reserva, // <--- ADICIONADO!
+            id_periodo: reserva.fk_id_periodo,
             horario_inicio: reserva.horario_inicio,
             horario_fim: reserva.horario_fim,
             passou: reservaPassou, // Flag para o Front-end
@@ -509,8 +510,8 @@ static async deletePeriodoReserva(req, res) {
       const results = await queryAsync(
         `SELECT 
             r.*, 
-            s.numero AS nomeSalaDisplay, 
-            s.descricao AS descricaoDetalhe, 
+            s.numero AS salaNome, 
+            s.descricao AS descricaoSala, 
             s.capacidade, 
             u.nome AS nomeUsuario, 
             p.horario_inicio, 
@@ -524,61 +525,35 @@ static async deletePeriodoReserva(req, res) {
         [data]
       );
   
-      if (results.length === 0) {
-        return res.status(200).json({ reservas: [] });
-      }
-  
-      const reservasAgrupadas = {};
-      const agora = new Date();
+      const reservaBySala = {};
   
       results.forEach((reserva) => {
-        const nomeSalaDisplay = reserva.nomeSalaDisplay || "Sala não informada";
-        const descricaoDetalhe = reserva.descricaoDetalhe || "Sem descrição";
-  
-        // Garante o agrupamento por sala
-        const chaveSala = `${nomeSalaDisplay}-${descricaoDetalhe}`;
-        if (!reservasAgrupadas[chaveSala]) {
-          reservasAgrupadas[chaveSala] = {
-            nomeSalaDisplay,
-            descricaoDetalhe,
-            capacidade: reserva.capacidade,
-            reservas: [],
-          };
+        const sala = reserva.salaNome || "Sala Desconhecida";
+        if (!reservaBySala[sala]) {
+          reservaBySala[sala] = [];
         }
   
-        // Verifica se o período já existe na lista dessa sala
-        const reservaExistente = reservasAgrupadas[chaveSala].reservas.find(
-          (r) =>
-            r.horario_inicio === reserva.horario_inicio &&
-            r.horario_fim === reserva.horario_fim
-        );
-  
-        const dataHoraFimString = data + " " + reserva.horario_fim;
-        const dataHoraFim = new Date(dataHoraFimString);
-        const passou = dataHoraFim <= agora;
-  
-        const periodo = {
+        reservaBySala[sala].push({
           id_reserva: reserva.id_reserva,
+          salaNome: reserva.salaNome,
+          descricaoSala: reserva.descricaoSala,
+          capacidade: reserva.capacidade,
+          nomeUsuario: reserva.nomeUsuario,
+          data_inicio: reserva.data_inicio,
+          data_fim: reserva.data_fim,
           horario_inicio: reserva.horario_inicio,
           horario_fim: reserva.horario_fim,
-          usuario: reserva.nomeUsuario,
-          passou,
-        };
-  
-        if (reservaExistente) {
-          reservaExistente.periodos.push(periodo);
-        } else {
-          reservasAgrupadas[chaveSala].reservas.push({
-            periodos: [periodo],
-          });
-        }
+          dias: reserva.dias || "",
+        });
       });
   
-      return res.status(200).json({ reservas: reservasAgrupadas });
+      console.log("Resultado agrupado:", reservaBySala);
+      return res.status(200).json({ reservaBySala }); // <-- alterado para bater com o front
     } catch (error) {
-      console.error("Erro ao buscar reservas por data:", error);
+      console.error(" Erro ao buscar reservas por data:", error);
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
+  
   
 };
