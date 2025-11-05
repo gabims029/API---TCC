@@ -5,8 +5,6 @@ const periodoController = require("../controller/periodoController");
 const reservaController = require("../controller/reservaController");
 const authorizeRole = require("../services/authorizeRole");
 const verifyJWT = require("../services/verifyJWT");
-const upload = require("../middleware/upload"); // importando o multer
-const authorizeSelf= require("../middleware/authorizeSelf")
 
 // Usuários (Routes consolidadas)
 router.post("/user/login", userController.postLogin);
@@ -15,7 +13,6 @@ router.get("/user/", verifyJWT, userController.getAllUsers);
 router.get("/user/:id", verifyJWT, userController.getUserById);
 //router.put("/user/", , userController.updateUser);
 router.delete("/user/:id", verifyJWT, userController.deleteUser);
-router.put("/user/:id", upload.single("foto"), verifyJWT, userController.updateUser);
 
 // A rota deve estar com a URL como /update/:id
 //router.put("/update/:id", verifyJWT, authorizeSelf, userController.updateUser);
@@ -54,7 +51,7 @@ router.put("/reserva/:id_reserva", verifyJWT, reservaController.updateReserva);
 router.delete("/reserva/:id_reserva", verifyJWT, reservaController.deleteSchedule);
 router.get('/reserva/usuario/:id_user', verifyJWT, reservaController.getSchedulesByUserID);
 router.get('/reservas/data/:data', reservaController.getReservasByDate);
-router.get('/reservas/bloco/:bloco', reservaController.getReservasByBloco);
+
 
 
 module.exports = router;

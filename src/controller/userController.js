@@ -10,7 +10,6 @@ module.exports = class userController {
   // Criar usuário
   static async createUser(req, res) {
     const { cpf, email, senha, nome, tipo } = req.body;
-    const fotoBuffer = req.file ? req.file.buffer : null; // captura foto
 
     const validationError = validateUser(req.body);
     if (validationError) return res.status(400).json(validationError);
@@ -25,13 +24,13 @@ module.exports = class userController {
       const hashedPassword = await bcrypt.hash(senha, SALT_ROUNDS);
 
       const query = `
-        INSERT INTO user (cpf, senha, email, nome, tipo, foto) 
+        INSERT INTO user (cpf, senha, email, nome, tipo) 
         VALUES (?, ?, ?, ?, ?, ?)
       `;
 
       connect.query(
         query,
-        [cpf, hashedPassword, email, nome, tipo.toLowerCase(), fotoBuffer],
+        [cpf, hashedPassword, email, nome, tipo.toLowerCase()],
         (err) => {
           if (err) {
             if (err.code === "ER_DUP_ENTRY" && err.message.includes("email")) {
@@ -52,12 +51,6 @@ module.exports = class userController {
     connect.query("SELECT * FROM user", (err, results) => {
       if (err) return res.status(500).json({ error: "Erro interno do servidor" });
 
-      // converte fotos para base64
-      const users = results.map(user => ({
-        ...user,
-        foto: user.foto ? `data:image/jpeg;base64,${user.foto.toString("base64")}` : null
-      }));
-
       return res.status(200).json({ message: "Obtendo todos os usuários", users });
     });
   }
@@ -70,81 +63,72 @@ module.exports = class userController {
       if (results.length === 0) return res.status(404).json({ error: "Usuário não encontrado" });
 
       const user = results[0];
-      user.foto = user.foto ? `data:image/jpeg;base64,${user.foto.toString("base64")}` : null;
 
       return res.status(200).json({ message: `Obtendo usuário com id: ${userId}`, user });
     });
   }
 
-  // Atualizar usuário (incluindo foto)
-  // Atualizar usuário
   static async updateUser(req, res) {
     const { cpf, email, senha, nome } = req.body;
-    const fotoBuffer = req.file ? req.file.buffer : null;
   
     // Confirma se o ID do usuário na URL é o mesmo do usuário autenticado
     if (Number(req.params.id) !== Number(req.userId)) {
       return res.status(403).json({ error: "Usuário não autorizado a atualizar este perfil" });
     }
   
-    // Validação dos dados enviados
-    const validationError = validateUser({ cpf, email, senha, nome });
+    // Validação parcial: só valida os campos que foram enviados
+    const validationError = validateUser({ cpf, email, senha, nome }, true); // true = valida campos opcionais
     if (validationError) return res.status(400).json(validationError);
   
     try {
-      // Valida o CPF (se necessário)
-      const cpfError = await validateCpf(cpf, req.user.id);
-      if (cpfError) return res.status(400).json(cpfError);
+      const params = [];
+      let queryUpdate = "UPDATE user SET ";
   
-      // Código de atualização do banco de dados
-      const hashedPassword = senha ? await bcrypt.hash(senha, SALT_ROUNDS) : null;
+      // Campos opcionais
+      const updates = [];
+      if (cpf) {
+        const cpfError = await validateCpf(cpf, req.userId);
+        if (cpfError) return res.status(400).json(cpfError);
+        updates.push("cpf = ?");
+        params.push(cpf);
+      }
   
-      let queryUpdate = "UPDATE user SET cpf = ?, email = ?, nome = ?";
-      let params = [cpf, email, nome];
+      if (email) {
+        const emailValidation = validateEmail(email);
+        if (emailValidation) return res.status(400).json(emailValidation);
+        updates.push("email = ?");
+        params.push(email);
+      }
   
-      if (hashedPassword) {
-        queryUpdate += ", senha = ?";
+      if (nome) {
+        updates.push("nome = ?");
+        params.push(nome);
+      }
+  
+      if (senha) {
+        const hashedPassword = await bcrypt.hash(senha, SALT_ROUNDS);
+        updates.push("senha = ?");
         params.push(hashedPassword);
       }
   
-      if (fotoBuffer) {
-        queryUpdate += ", foto = ?";
-        params.push(fotoBuffer);
+      // Se não houver campos para atualizar
+      if (updates.length === 0) {
+        return res.status(400).json({ error: "Nenhum dado enviado para atualização" });
       }
   
+      queryUpdate += updates.join(", ");
       queryUpdate += " WHERE id_user = ?";
-      params.push(req.user.id);  // Usando o id do usuário autenticado para atualizar
+      params.push(req.userId);
   
       // Executa a query
       connect.query(queryUpdate, params, (err, results) => {
-        if (err) {
-          return res.status(500).json({ error: "Erro ao atualizar usuário", err });
-        }
-  
+        if (err) return res.status(500).json({ error: "Erro ao atualizar usuário", err });
         return res.status(200).json({ message: "Usuário atualizado com sucesso" });
       });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }
-  }
-  
-
-
-  // Endpoint opcional para servir a foto diretamente
-  static async getUserPhoto(req, res) {
-    const userId = req.params.id;
-    connect.query("SELECT foto FROM user WHERE id_user = ?", [userId], (err, results) => {
-      if (err || results.length === 0 || !results[0].foto) {
-        return res.status(404).send("Foto não encontrada");
-      }
-      const fotoBuffer = results[0].foto;
-      res.writeHead(200, {
-        "Content-Type": "image/jpeg",
-        "Content-Length": fotoBuffer.length
-      });
-      res.end(fotoBuffer);
-    });
-  }
+  }  
 
   // Deletar usuário
   static async deleteUser(req, res) {
