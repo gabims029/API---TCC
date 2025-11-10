@@ -250,88 +250,76 @@ module.exports = class ControllerReserva {
   // --- Buscar reservas de um usuário, agrupadas por data (MODIFICADA) ---
   static async getSchedulesByUserID(req, res) {
     const userId = req.params.id_user;
-
+  
     try {
-      // 1. Consulta SQL para buscar todas as reservas, salas e períodos do usuário
+      // Consulta: reservas do usuário com sala e período
       const results = await queryAsync(
-        `SELECT r.*, s.numero AS nomeSala, s.descricao AS descricaoSala,
-                         p.horario_inicio, p.horario_fim
-                  FROM reserva r
-                  JOIN sala s ON r.fk_id_sala = s.id_sala
-                  JOIN periodo p ON r.fk_id_periodo = p.id_periodo
-                  WHERE r.fk_id_user = ?`,
+        `
+        SELECT 
+          r.id_reserva,
+          r.dia,
+          s.numero AS nomeSala,
+          s.descricao AS descricaoSala,
+          p.horario_inicio,
+          p.horario_fim,
+          r.fk_id_periodo
+        FROM reserva r
+        JOIN sala s ON r.fk_id_sala = s.id_sala
+        JOIN periodo p ON r.fk_id_periodo = p.id_periodo
+        WHERE r.fk_id_user = ?
+        ORDER BY r.dia, s.numero, p.horario_inicio;
+        `,
         [userId]
       );
-
+  
       const reservasPorData = {};
-      const agora = new Date(); // Data/Hora atual para comparação
-
-      // 2. Loop sobre os resultados e agrupe por data, nome da sala e descrição
+      const agora = new Date();
+  
       results.forEach((reserva) => {
-        // Como agora data_inicio e data_fim são iguais, o loop forçará apenas 1 iteração
-        const dataInicio =
-          reserva.data_inicio?.toISOString().split("T")[0] ||
-          "Data não informada";
-        const dataFim =
-          reserva.data_fim?.toISOString().split("T")[0] || dataInicio;
-
-        const currentDate = new Date(dataInicio);
-        const endDate = new Date(dataFim);
-
-        // Troca de Campos conforme solicitado:
-        const nomeSalaDisplay = reserva.nomeSala || "Sala não informada"; // Ex: "A6" (NOVO TÍTULO)
-        const descricaoDetalhe = reserva.descricaoSala || "Sem descrição"; // Ex: "PNEUMATICA/HIDRAULICA" (NOVO DETALHE)
-
-        // Loop para cobrir todas as datas do período de reserva
-        while (currentDate <= endDate) {
-          const diaFormatado = currentDate.toISOString().split("T")[0];
-          if (!reservasPorData[diaFormatado])
-            reservasPorData[diaFormatado] = [];
-
-          // OBTÉM O DIA DA SEMANA
-          const diaDaSemana = getDiaDaSemana(diaFormatado);
-
-          // Cria a data/hora COMPLETA de TÉRMINO para verificar se passou
-          const dataHoraFimString = diaFormatado + " " + reserva.horario_fim;
-          const dataHoraFim = new Date(dataHoraFimString);
-          const reservaPassou = dataHoraFim <= agora;
-
-          // 3. Busca um grupo existente (nomeSalaDisplay + descricaoDetalhe)
-          const existente = reservasPorData[diaFormatado].find(
-            (r) =>
-              r.nomeSalaDisplay === nomeSalaDisplay &&
-              r.descricaoDetalhe === descricaoDetalhe
-          );
-
-          const novoPeriodo = {
-            id_reserva: reserva.id_reserva, // <--- ADICIONADO!
-            id_periodo: reserva.fk_id_periodo,
-            horario_inicio: reserva.horario_inicio,
-            horario_fim: reserva.horario_fim,
-            passou: reservaPassou, // Flag para o Front-end
-          };
-
-          if (existente) {
-            // Adiciona o novo período
-            existente.periodos.push(novoPeriodo);
-          } else {
-            // Cria um novo grupo
-            reservasPorData[diaFormatado].push({
-              nomeSalaDisplay: nomeSalaDisplay,
-              descricaoDetalhe: descricaoDetalhe,
-              diaDaSemana: diaDaSemana, // NOVO CAMPO
-              periodos: [novoPeriodo],
-              dias: reserva.dias?.split(",").map((d) => d.trim()) || [],
-            });
-          }
-
-          // Avança para o próximo dia.
-          // É crucial usar `currentDate.getTime() + 24 * 60 * 60 * 1000` para evitar problemas com DST
-          currentDate.setDate(currentDate.getDate() + 1);
+        const diaFormatado = reserva.dia
+          ? new Date(reserva.dia).toISOString().split("T")[0]
+          : "Data não informada";
+  
+        if (!reservasPorData[diaFormatado]) reservasPorData[diaFormatado] = [];
+  
+        // Função auxiliar para o dia da semana
+        const diaDaSemana = getDiaDaSemana(diaFormatado);
+  
+        // Cria data/hora completa para checar se já passou
+        const dataHoraFim = new Date(`${diaFormatado}T${reserva.horario_fim}`);
+        const reservaPassou = dataHoraFim <= agora;
+  
+        const nomeSalaDisplay = reserva.nomeSala || "Sala não informada";
+        const descricaoDetalhe = reserva.descricaoSala || "Sem descrição";
+  
+        // Procura grupo existente (sala + descrição)
+        const existente = reservasPorData[diaFormatado].find(
+          (r) =>
+            r.nomeSalaDisplay === nomeSalaDisplay &&
+            r.descricaoDetalhe === descricaoDetalhe
+        );
+  
+        const novoPeriodo = {
+          id_reserva: reserva.id_reserva,
+          id_periodo: reserva.fk_id_periodo,
+          horario_inicio: reserva.horario_inicio,
+          horario_fim: reserva.horario_fim,
+          passou: reservaPassou,
+        };
+  
+        if (existente) {
+          existente.periodos.push(novoPeriodo);
+        } else {
+          reservasPorData[diaFormatado].push({
+            nomeSalaDisplay,
+            descricaoDetalhe,
+            diaDaSemana,
+            periodos: [novoPeriodo],
+          });
         }
       });
-
-      // Opcional: Ordenar os períodos dentro de cada grupo por horário de início
+  
+      // Ordena os períodos por horário de início
       Object.values(reservasPorData).forEach((listaReservasDoDia) => {
         listaReservasDoDia.forEach((grupo) => {
           grupo.periodos.sort((a, b) =>
@@ -339,13 +327,14 @@ module.exports = class ControllerReserva {
           );
         });
       });
-
+  
       return res.status(200).json({ reservas: reservasPorData });
     } catch (error) {
       console.error("Erro inesperado:", error);
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
+  
   // Excluir apenas UM período específico dentro de uma reserva
   static async deletePeriodoReserva(req, res) {
     const { id_reserva, id_periodo } = req.params;
@@ -482,14 +471,15 @@ module.exports = class ControllerReserva {
     }
   }
 
-  // --- Buscar reservas por data (DEIXADA NO FORMATO ORIGINAL) ---
+  // --- Buscar reservas por data 
   static async getReservasByDate(req, res) {
-    const { data } = req.params;
-
+    const { data } = req.params; // exemplo: 2025-11-11
+  
     try {
       const results = await queryAsync(
         `SELECT 
-            r.*, 
+            r.id_reserva,
+            r.dia,
             s.numero AS salaNome, 
             s.descricao AS descricaoSala, 
             s.capacidade, 
@@ -500,38 +490,49 @@ module.exports = class ControllerReserva {
          JOIN sala s ON r.fk_id_sala = s.id_sala
          JOIN user u ON r.fk_id_user = u.id_user
          JOIN periodo p ON r.fk_id_periodo = p.id_periodo
-         WHERE ? BETWEEN r.data_inicio AND r.data_fim
+         WHERE r.dia = ?
          ORDER BY s.numero, p.horario_inicio;`,
         [data]
       );
-
+  
+      if (results.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "Nenhuma reserva encontrada para esta data." });
+      }
+  
+      // Agrupar reservas por sala
       const reservaBySala = {};
-
+  
       results.forEach((reserva) => {
         const sala = reserva.salaNome || "Sala Desconhecida";
         if (!reservaBySala[sala]) {
           reservaBySala[sala] = [];
         }
-
+  
         reservaBySala[sala].push({
           id_reserva: reserva.id_reserva,
+          dia: reserva.dia,
           salaNome: reserva.salaNome,
           descricaoSala: reserva.descricaoSala,
           capacidade: reserva.capacidade,
           nomeUsuario: reserva.nomeUsuario,
-          data_inicio: reserva.data_inicio,
-          data_fim: reserva.data_fim,
           horario_inicio: reserva.horario_inicio,
           horario_fim: reserva.horario_fim,
-          dias: reserva.dias || "",
         });
       });
-
+  
       console.log("Resultado agrupado:", reservaBySala);
-      return res.status(200).json({ reservaBySala }); // <-- alterado para bater com o front
+  
+      return res.status(200).json({ reservaBySala });
+  
     } catch (error) {
-      console.error(" Erro ao buscar reservas por data:", error);
-      return res.status(500).json({ error: "Erro interno do servidor" });
+      console.error("Erro ao buscar reservas por data:", error);
+      return res.status(500).json({
+        error: "Erro interno do servidor",
+        detalhe: error.message,
+      });
     }
   }
+  
 };
