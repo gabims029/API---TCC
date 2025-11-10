@@ -58,7 +58,6 @@ CREATE TABLE `reserva` (
   `data_inicio` date DEFAULT NULL,
   `data_fim` date DEFAULT NULL,
   PRIMARY KEY (`id_reserva`),
-  KEY `fk_id_periodo` (`fk_id_periodo`),
   KEY `fk_id_user` (`fk_id_user`),
   KEY `fk_id_sala` (`fk_id_sala`),
   CONSTRAINT `reserva_ibfk_1` FOREIGN KEY (`fk_id_periodo`) REFERENCES `periodo` (`id_periodo`),
