@@ -26,7 +26,6 @@ DROP TABLE IF EXISTS `periodo`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `periodo` (
   `id_periodo` int NOT NULL AUTO_INCREMENT,
-  `fk_id_reserva` int DEFAULT NULL,
   `horario_inicio` time NOT NULL,
   `horario_fim` time NOT NULL,
   PRIMARY KEY (`id_periodo`)
@@ -52,12 +51,12 @@ DROP TABLE IF EXISTS `reserva`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `reserva` (
   `id_reserva` int NOT NULL AUTO_INCREMENT,
+  `fk_id_periodo` int DEFAULT NULL,
   `fk_id_user` int DEFAULT NULL,
   `fk_id_sala` int DEFAULT NULL,
-  `dias` varchar(255) DEFAULT NULL,
-  `data_inicio` date DEFAULT NULL,
-  `data_fim` date DEFAULT NULL,
+  `dia` date DEFAULT NULL,
   PRIMARY KEY (`id_reserva`),
+  KEY `fk_id_periodo` (`fk_id_periodo`),
   KEY `fk_id_user` (`fk_id_user`),
   KEY `fk_id_sala` (`fk_id_sala`),
   CONSTRAINT `reserva_ibfk_1` FOREIGN KEY (`fk_id_periodo`) REFERENCES `periodo` (`id_periodo`),
@@ -98,7 +97,7 @@ CREATE TABLE `sala` (
 
 LOCK TABLES `sala` WRITE;
 /*!40000 ALTER TABLE `sala` DISABLE KEYS */;
-INSERT INTO `sala` VALUES (1,'A1','CONVERSORES',16,'A'),(2,'A2','ELETRÔNICA',16,'A'),(3,'A3','CLP',16,'A'),(4,'A4','AUTOMAÇÃO',20,'A'),(5,'A5','METROLOGIA',16,'A'),(6,'A6','PNEUMÁTICA/HIDRÁULICA',20,'A'),(7,'COEL','OFICINA DE COMANDOS ELÉTRICOS',16,'A'),(8,'ITEL1','OFICINA DE INSTALAÇÕES ELÉTRICAS - G1',16,'A'),(9,'ITEL2','OFICINA DE INSTALAÇÕES ELÉTRICAS - G2',16,'A'),(10,'TOR','OFICINA DE TORNEARIA',20,'A'),(11,'AJFR','OFICINA DE AJUSTAGEM/FRESAGEM',16,'A'),(12,'CNC','OFICINA DE CNC',16,'A'),(13,'MMC','OFICINA DE MANUTENÇÃO MECÂNICA',16,'A'),(14,'SOLD','OFICINA DE SOLDAGEM',16,'A'),(15,'B2','SALA DE AULA',32,'B'),(16,'B3','SALA DE AULA',32,'B'),(17,'B5','SALA DE AULA',40,'B'),(18,'B6','SALA DE AULA',32,'B'),(19,'B7','SALA DE AULA',32,'B'),(20,'B8','LAB. INFORMÁTICA',20,'B'),(21,'B9','LAB. INFORMÁTICA',16,'B'),(22,'B10','LAB. INFORMÁTICA',16,'B'),(23,'B11','LAB. INFORMÁTICA',40,'B'),(24,'B12','LAB. INFORMÁTICA',40,'B'),(25,'ALI','LAB. ALIMENTOS',16,'A'),(26,'C1','SALA DE AULA',24,'C'),(27,'C2','LAB. DE INFORMÁTICA',32,'C'),(28,'C3','SALA DE MODELAGEM VESTUÁRIO',20,'C'),(29,'C4','SALA DE MODELAGEM VESTUÁRIO',20,'C'),(30,'C5','SALA DE AULA',16,'C'),(31,'VEST','OFICINA DE VESTUÁRIO',20,'C'),(32,'MPESP','OFICINA DE MANUTENÇÃO PESPONTO',16,'C'),(33,'AUTO','OFICINA DE MANUTENÇÃO AUTOMOTIVA',20,'C'),(34,'D1','SALA MODELAGEM',16,'D'),(35,'D2','SALA DE MODELAGEM',20,'D'),(36,'D3','SALA DE AULA',16,'D'),(37,'D4','SALA DE CRIAÇÃO',18,'D'),(38,'CORT1','OFICINA DE CORTE - G1',16,'D'),(39,'CORT2','OFICINA DE CORTE - G2',16,'D'),(40,'PRE','OFICINA DE PREPARAÇÃO',16,'D'),(41,'PESP1','OFICINA DE PESPONTO - G1',16,'D'),(42,'PESP2','OFICINA DE PESPONTO - G2',16,'D'),(43,'PESP3','OFICINA DE PESPONTO - G3',16,'D'),(44,'MONT1','OFICINA DE MONTAGEM - G1',16,'D'),(45,'MONT2','OFICINA DE MONTAGEM - G2',16,'D');
+INSERT INTO `sala` VALUES (1,'A1','CONVERSORES',16,'A'),(2,'A2','ELETRÔNICA',16,'A'),(3,'A3','CLP',16,'B'),(4,'A4','AUTOMAÇÃO',20,'A'),(5,'A5','METROLOGIA',16,'A'),(6,'A6','PNEUMÁTICA/HIDRÁULICA',20,'A'),(7,'COEL','OFICINA DE COMANDOS ELÉTRICOS',16,'A'),(8,'ITEL1','OFICINA DE INSTALAÇÕES ELÉTRICAS - G1',16,'A'),(9,'ITEL2','OFICINA DE INSTALAÇÕES ELÉTRICAS - G2',16,'A'),(10,'TOR','OFICINA DE TORNEARIA',20,'A'),(11,'AJFR','OFICINA DE AJUSTAGEM/FRESAGEM',16,'A'),(12,'CNC','OFICINA DE CNC',16,'A'),(13,'MMC','OFICINA DE MANUTENÇÃO MECÂNICA',16,'A'),(14,'SOLD','OFICINA DE SOLDAGEM',16,'A'),(15,'B2','SALA DE AULA',32,'B'),(16,'B3','SALA DE AULA',32,'B'),(17,'B5','SALA DE AULA',40,'B'),(18,'B6','SALA DE AULA',32,'B'),(19,'B7','SALA DE AULA',32,'B'),(20,'B8','LAB. INFORMÁTICA',20,'B'),(21,'B9','LAB. INFORMÁTICA',16,'B'),(22,'B10','LAB. INFORMÁTICA',16,'B'),(23,'B11','LAB. INFORMÁTICA',40,'B'),(24,'B12','LAB. INFORMÁTICA',40,'B'),(25,'ALI','LAB. ALIMENTOS',16,'A'),(26,'C1','SALA DE AULA',24,'C'),(27,'C2','LAB. DE INFORMÁTICA',32,'C'),(28,'C3','SALA DE MODELAGEM VESTUÁRIO',20,'C'),(29,'C4','SALA DE MODELAGEM VESTUÁRIO',20,'C'),(30,'C5','SALA DE AULA',16,'C'),(31,'VEST','OFICINA DE VESTUÁRIO',20,'C'),(32,'MPESP','OFICINA DE MANUTENÇÃO PESPONTO',16,'C'),(33,'AUTO','OFICINA DE MANUTENÇÃO AUTOMOTIVA',20,'C'),(34,'D1','SALA MODELAGEM',16,'D'),(35,'D2','SALA DE MODELAGEM',20,'D'),(36,'D3','SALA DE AULA',16,'D'),(37,'D4','SALA DE CRIAÇÃO',18,'D'),(38,'CORT1','OFICINA DE CORTE - G1',16,'D'),(39,'CORT2','OFICINA DE CORTE - G2',16,'D'),(40,'PRE','OFICINA DE PREPARAÇÃO',16,'D'),(41,'PESP1','OFICINA DE PESPONTO - G1',16,'D'),(42,'PESP2','OFICINA DE PESPONTO - G2',16,'D'),(43,'PESP3','OFICINA DE PESPONTO - G3',16,'D'),(44,'MONT1','OFICINA DE MONTAGEM - G1',16,'D'),(45,'MONT2','OFICINA DE MONTAGEM - G2',16,'D');
 /*!40000 ALTER TABLE `sala` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -151,6 +150,52 @@ begin
 end; //
 
 delimiter ;
+
+DELIMITER //
+
+CREATE PROCEDURE conflit_day (
+    IN p_dia DATE,
+    IN p_fk_id_user INT,
+    IN p_fk_id_sala INT,
+    IN p_fk_id_periodo INT
+)
+BEGIN
+    DECLARE v_dia_conflito DATE;
+    DECLARE v_inicio TIME;
+    DECLARE v_fim TIME;
+    DECLARE v_saida char(255);
+
+    -- Verifica se já existe uma reserva para o mesmo dia, sala e período
+    SELECT r.dia 
+    INTO v_dia_conflito
+    FROM reserva AS r
+    WHERE 
+        r.fk_id_sala = p_fk_id_sala
+        AND r.dia = p_dia
+        AND r.fk_id_periodo = p_fk_id_periodo
+    LIMIT 1;
+
+    -- Se já existe, dispara erro
+    IF v_dia_conflito IS NOT NULL THEN
+        SELECT p.horario_inicio into v_inicio from periodo p where p.id_periodo = p_fk_id_periodo
+        LIMIT 1;
+        SELECT p.horario_fim into v_fim from periodo p where p.id_periodo = p_fk_id_periodo
+        LIMIT 1;
+
+        set v_saida = CONCAT(p_dia," no periodo: ",v_inicio, " - ",v_fim);
+
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = v_saida;
+                
+    ELSE
+        -- Caso contrário, insere a reserva normalmente
+        INSERT INTO reserva (fk_id_user, fk_id_sala, dia, fk_id_periodo)
+        VALUES (p_fk_id_user, p_fk_id_sala, p_dia, p_fk_id_periodo);
+    END IF;
+END //
+
+DELIMITER ;
+
 --
 -- Dumping events for database 'senai'
 --

@@ -1,7 +1,7 @@
 const connect = require("../db/connect");
 const validateReserva = require("../services/validateReserva");
 
-// FUNÇÃO AUXILIAR AJUSTADA: Retorna a abreviação do dia (ex: 'Seg')
+//  Retorna a abreviação do dia (ex: 'Seg');
 function getDiaDaSemana(dateString) {
   const date = new Date(dateString + "T00:00:00"); // Garante que a data é tratada no início do dia
 
@@ -25,17 +25,17 @@ const queryAsync = (query, values = []) => {
 module.exports = class ControllerReserva {
   static async createReserva(req, res) {
     const {
-      fk_id_periodo,
+      periodos, //Uma lista de períodos
       fk_id_user,
       fk_id_sala,
-      dias,
+      dias, //Uma lista de dias
       data_inicio,
       data_fim,
     } = req.body;
 
     //  Validação de campos obrigatórios
     if (
-      !fk_id_periodo ||
+      !periodos ||
       !fk_id_user ||
       !fk_id_sala ||
       !dias ||
@@ -77,7 +77,6 @@ module.exports = class ControllerReserva {
 
     //  Validação de serviço
     const validation = validateReserva({
-      fk_id_periodo,
       fk_id_user,
       fk_id_sala,
       dias: diasString,
@@ -103,14 +102,14 @@ module.exports = class ControllerReserva {
       if (sala.length === 0)
         return res.status(400).json({ error: "Sala não encontrada" });
 
-      const periodo = await queryAsync(
-        "SELECT * FROM periodo WHERE id_periodo = ?",
-        [fk_id_periodo]
-      );
-      if (periodo.length === 0)
-        return res.status(400).json({ error: "Período não encontrado" });
+      // const periodo = await queryAsync(
+      //   "SELECT * FROM periodo WHERE id_periodo = ?",
+      //   [fk_id_periodo]
+      // );
+      // if (periodo.length === 0)
+      //   return res.status(400).json({ error: "Período não encontrado" });
 
-      const { horario_inicio, horario_fim } = periodo[0];
+      //const { horario_inicio, horario_fim } = periodo[0];
 
       //  Gera os dias válidos dentro do intervalo
       const start = new Date(data_inicio + "T00:00:00");
@@ -119,7 +118,7 @@ module.exports = class ControllerReserva {
 
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const dataFormatada = d.toISOString().split("T")[0];
-        const diaAtual = getDiaDaSemana(dataFormatada); //  Retorna o dia da semana da data iterada 
+        const diaAtual = getDiaDaSemana(dataFormatada); //  Retorna o dia da semana da data iterada
 
         if (diasArray.includes(diaAtual)) {
           diasValidos.push(dataFormatada);
@@ -134,66 +133,48 @@ module.exports = class ControllerReserva {
         });
       }
 
-      //  Verificar conflitos para cada dia
-      const conflitoQuery = `
-        SELECT r.id_reserva
-        FROM reserva AS r
-        INNER JOIN periodo AS p ON r.fk_id_periodo = p.id_periodo
-        WHERE r.fk_id_sala = ?
-          AND r.data_inicio = ? /* Verifica o dia exato */
-          AND (
-            (p.horario_inicio < ? AND p.horario_fim > ?) /* Conflito de período 1 */
-            OR
-            (p.horario_inicio < ? AND p.horario_fim > ?) /* Conflito de período 2 */
-          );
-      `;
-
       const reservasCriadas = [];
+      const errosReservas = [];
 
       for (const dataFormatada of diasValidos) {
-        const conflitoValues = [
-          fk_id_sala,
-          dataFormatada,
-          horario_fim,
-          horario_inicio,
-          horario_inicio,
-          horario_fim,
-        ];
+        for (const periodo of periodos) {
+          const conflitoValues = [
+            dataFormatada,
+            fk_id_user,
+            fk_id_sala,
+            periodo,
+          ];
 
-        const conflito = await queryAsync(conflitoQuery, conflitoValues);
+          try {
+            const results = await queryAsync(
+              "CALL conflit_day (?,?,?,?)",
+              conflitoValues
+            );
 
-        if (conflito.length > 0) {
-          return res.status(400).json({
-            error: `Conflito! A sala ${sala[0].numero} já está reservada no dia ${dataFormatada} neste período (${horario_inicio} - ${horario_fim}).`,
-          });
+            reservasCriadas.push({
+              data: dataFormatada,
+              periodo,
+              results,
+            });
+          } catch (err) {
+            errosReservas.push({
+              data: dataFormatada,
+              periodo,
+              erro: "O dia " + err.sqlMessage + " já está reservado",
+            });
+            console.error("Erro ao criar reserva:", err);
+          }
         }
-
-        // 5. Inserir reserva para aquele dia
-        const insertQuery = `
-          INSERT INTO reserva (fk_id_periodo, fk_id_user, fk_id_sala, dias, data_inicio, data_fim)
-          VALUES (?, ?, ?, ?, ?, ?);
-        `;
-
-        const values = [
-          fk_id_periodo,
-          fk_id_user,
-          fk_id_sala,
-          diasString,
-          dataFormatada,
-          dataFormatada,
-        ];
-
-        const result = await queryAsync(insertQuery, values);
-
-        reservasCriadas.push({
-          id_reserva: result.insertId,
-          data: dataFormatada,
-        });
       }
 
       return res.status(201).json({
-        message: `${reservasCriadas.length} reserva(s) criada(s) com sucesso.`,
+        message:
+          reservasCriadas.length === 0
+            ? "Nenhuma reserva criada"
+            : `${reservasCriadas.length} reserva(s) criada(s) com sucesso.`,
         reservas: reservasCriadas,
+        erros: `${errosReservas.length} erros ao reservar sendo eles: `,
+        msgErros: errosReservas,
       });
     } catch (error) {
       console.error("Erro ao criar reserva:", error);
@@ -366,43 +347,42 @@ module.exports = class ControllerReserva {
     }
   }
   // Excluir apenas UM período específico dentro de uma reserva
-static async deletePeriodoReserva(req, res) {
-  const { id_reserva, id_periodo } = req.params;
+  static async deletePeriodoReserva(req, res) {
+    const { id_reserva, id_periodo } = req.params;
 
-  if (!id_reserva || !id_periodo) {
-    return res.status(400).json({
-      error: "É necessário informar o id_reserva e o id_periodo.",
-    });
-  }
+    if (!id_reserva || !id_periodo) {
+      return res.status(400).json({
+        error: "É necessário informar o id_reserva e o id_periodo.",
+      });
+    }
 
-  try {
-    const query = `
+    try {
+      const query = `
       DELETE FROM reserva 
       WHERE id_reserva = ? AND fk_id_periodo = ?
     `;
 
-    connect.query(query, [id_reserva, id_periodo], (err, result) => {
-      if (err) {
-        console.error("Erro ao excluir período da reserva:", err);
-        return res.status(500).json({ error: "Erro interno do servidor." });
-      }
+      connect.query(query, [id_reserva, id_periodo], (err, result) => {
+        if (err) {
+          console.error("Erro ao excluir período da reserva:", err);
+          return res.status(500).json({ error: "Erro interno do servidor." });
+        }
 
-      if (result.affectedRows === 0) {
-        return res
-          .status(404)
-          .json({ error: "Reserva ou período não encontrado." });
-      }
+        if (result.affectedRows === 0) {
+          return res
+            .status(404)
+            .json({ error: "Reserva ou período não encontrado." });
+        }
 
-      return res.status(200).json({
-        message: "Período da reserva excluído com sucesso!",
+        return res.status(200).json({
+          message: "Período da reserva excluído com sucesso!",
+        });
       });
-    });
-  } catch (error) {
-    console.error("Erro interno:", error);
-    return res.status(500).json({ error: "Erro interno do servidor." });
+    } catch (error) {
+      console.error("Erro interno:", error);
+      return res.status(500).json({ error: "Erro interno do servidor." });
+    }
   }
-}
-
 
   // --- Buscar todas as reservas (DEIXADA NO FORMATO ORIGINAL) ---
   static async getAllReservas(req, res) {
@@ -505,7 +485,7 @@ static async deletePeriodoReserva(req, res) {
   // --- Buscar reservas por data (DEIXADA NO FORMATO ORIGINAL) ---
   static async getReservasByDate(req, res) {
     const { data } = req.params;
-  
+
     try {
       const results = await queryAsync(
         `SELECT 
@@ -524,15 +504,15 @@ static async deletePeriodoReserva(req, res) {
          ORDER BY s.numero, p.horario_inicio;`,
         [data]
       );
-  
+
       const reservaBySala = {};
-  
+
       results.forEach((reserva) => {
         const sala = reserva.salaNome || "Sala Desconhecida";
         if (!reservaBySala[sala]) {
           reservaBySala[sala] = [];
         }
-  
+
         reservaBySala[sala].push({
           id_reserva: reserva.id_reserva,
           salaNome: reserva.salaNome,
@@ -546,7 +526,7 @@ static async deletePeriodoReserva(req, res) {
           dias: reserva.dias || "",
         });
       });
-  
+
       console.log("Resultado agrupado:", reservaBySala);
       return res.status(200).json({ reservaBySala }); // <-- alterado para bater com o front
     } catch (error) {
@@ -554,6 +534,4 @@ static async deletePeriodoReserva(req, res) {
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
-  
-  
 };

@@ -99,7 +99,7 @@ module.exports = class userController {
       cpf,
     } = req.body;
 
-    // 🛑 NOVIDADE: Captura a foto e o tipo do Multer (req.file)
+    //  Captura a foto e o tipo do Multer (req.file)
     const fotoBuffer = req.file?.buffer || null;
     const fotoTipo = req.file?.mimetype || null;
 
@@ -121,11 +121,11 @@ module.exports = class userController {
     }
 
     try {
-      // 2. Validação do CPF
+      // . Validação do CPF
       const cpfError = await validateCpf(cpf, id);
       if (cpfError) return res.status(400).json(cpfError);
 
-      // 3. Busca a senha atual no banco para autenticar (e obter a senha para manter, se for o caso)
+      // . Busca a senha atual no banco para autenticar (e obter a senha para manter, se for o caso)
       const querySelect = "SELECT senha FROM user WHERE id_user = ?";
       connect.query(querySelect, [id], async (err, results) => {
         if (err) return res.status(500).json({ error: "Erro interno do servidor: " + err.message });
@@ -133,7 +133,7 @@ module.exports = class userController {
 
         const senhaBanco = results[0].senha;
 
-        // 4. Verifica Senha Atual (OBRIGATÓRIO para qualquer alteração de dados)
+        // . Verifica Senha Atual (OBRIGATÓRIO para qualquer alteração de dados)
         const senhaOK = await bcrypt.compare(senhaAtual, senhaBanco);
         if (!senhaOK) return res.status(401).json({ error: "Senha atual incorreta." });
 
@@ -142,22 +142,21 @@ module.exports = class userController {
         let values = [email, nome, cpf];
         let hashParaSalvar = senhaBanco; // Padrão: Mantém a senha atual
 
-        // A. Se houver NOVA senha, gera o hash e a inclui
+        // . Se houver NOVA senha, gera o hash e a inclui
         if (novaSenha.length > 0) {
           hashParaSalvar = await bcrypt.hash(novaSenha, SALT_ROUNDS);
         }
         setClauses.push("senha = ?");
         values.push(hashParaSalvar);
 
-        // B. Se houver FOTO, inclui o buffer e o tipo
+        //  Se houver FOTO, inclui o buffer e o tipo
         if (fotoBuffer) {
           setClauses.push("foto = ?");
           values.push(fotoBuffer);
-          setClauses.push("foto_tipo = ?"); // <<-- Requer que você crie a coluna 'foto_tipo'
+          setClauses.push("foto_tipo = ?");
           values.push(fotoTipo);
         }
-
-        // 6. Executa a Query
+        //  Executa a Query
         const queryUpdate = `UPDATE user SET ${setClauses.join(", ")} WHERE id_user = ?`;
         values.push(id); // Adiciona o ID no final para a cláusula WHERE
 
@@ -176,7 +175,7 @@ module.exports = class userController {
     }
   }
 
-  // 🛑 ATUALIZAÇÃO: getUserPhoto para usar o foto_tipo
+  //  getUserPhoto para usar o foto_tipo
   static async getUserPhoto(req, res) {
     const userId = req.params.id;
     connect.query(

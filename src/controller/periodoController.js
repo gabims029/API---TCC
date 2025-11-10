@@ -113,7 +113,7 @@ module.exports = class periodoController {
     const queryPeriodos = `SELECT * FROM periodo`;
   
     try {
-      // 1️⃣ Buscar todos os períodos
+      // Buscar todos os períodos
       connect.query(queryPeriodos, (err, periodos) => {
         if (err) {
           console.error("Erro ao buscar períodos:", err);
@@ -124,7 +124,7 @@ module.exports = class periodoController {
           return res.status(404).json({ error: "Nenhum período encontrado" });
         }
   
-        // 2️⃣ Buscar reservas + nome do usuário
+        //  Buscar reservas + nome do usuário
         const queryReservas = `
           SELECT r.fk_id_periodo, u.nome AS nome_usuario
           FROM reserva r
