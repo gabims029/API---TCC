@@ -27,36 +27,7 @@ UNLOCK TABLES;
 -- Table structure for table `reserva`
 --
 
-DROP TABLE IF EXISTS `reserva`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `reserva` (
-  `id_reserva` int NOT NULL AUTO_INCREMENT,
-  `fk_id_periodo` int DEFAULT NULL,
-  `fk_id_user` int DEFAULT NULL,
-  `fk_id_sala` int DEFAULT NULL,
-  `dia` date DEFAULT NULL,
-  PRIMARY KEY (`id_reserva`),
-  KEY `fk_id_periodo` (`fk_id_periodo`),
-  KEY `fk_id_user` (`fk_id_user`),
-  KEY `fk_id_sala` (`fk_id_sala`),
-  CONSTRAINT `reserva_ibfk_1` FOREIGN KEY (`fk_id_periodo`) REFERENCES `periodo` (`id_periodo`),
-  CONSTRAINT `reserva_ibfk_2` FOREIGN KEY (`fk_id_user`) REFERENCES `user` (`id_user`),
-  CONSTRAINT `reserva_ibfk_3` FOREIGN KEY (`fk_id_sala`) REFERENCES `sala` (`id_sala`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `reserva`
---
-
-LOCK TABLES `reserva` WRITE;
-/*!40000 ALTER TABLE `reserva` DISABLE KEYS */;
-/*!40000 ALTER TABLE `reserva` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `sala`
 --
 
 DROP TABLE IF EXISTS `sala`;
@@ -118,7 +89,36 @@ INNER JOIN periodo p2
  AND p1.horario_fim = p2.horario_fim
  AND p1.id_periodo > p2.id_periodo;
 
+DROP TABLE IF EXISTS `reserva`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `reserva` (
+  `id_reserva` int NOT NULL AUTO_INCREMENT,
+  `fk_id_periodo` int DEFAULT NULL,
+  `fk_id_user` int DEFAULT NULL,
+  `fk_id_sala` int DEFAULT NULL,
+  `dia` date DEFAULT NULL,
+  PRIMARY KEY (`id_reserva`),
+  KEY `fk_id_periodo` (`fk_id_periodo`),
+  KEY `fk_id_user` (`fk_id_user`),
+  KEY `fk_id_sala` (`fk_id_sala`),
+  CONSTRAINT `reserva_ibfk_1` FOREIGN KEY (`fk_id_periodo`) REFERENCES `periodo` (`id_periodo`),
+  CONSTRAINT `reserva_ibfk_2` FOREIGN KEY (`fk_id_user`) REFERENCES `user` (`id_user`),
+  CONSTRAINT `reserva_ibfk_3` FOREIGN KEY (`fk_id_sala`) REFERENCES `sala` (`id_sala`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `reserva`
+--
+
+LOCK TABLES `reserva` WRITE;
+/*!40000 ALTER TABLE `reserva` DISABLE KEYS */;
+/*!40000 ALTER TABLE `reserva` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `sala`
 delimiter //
 
 create procedure deletarUsuarioComReservas(in p_id_user int)
