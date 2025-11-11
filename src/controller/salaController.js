@@ -29,11 +29,13 @@ module.exports = class salaController {
       await queryAsync(query, [numero, descricao, capacidade, bloco]);
       res.status(201).json({ message: "Sala cadastrada com sucesso" });
     } catch (error) {
-      if (error.code === 'ER_DUP_ENTRY') {
+      if (error.code === "ER_DUP_ENTRY") {
         return res.status(409).json({ error: "Número de sala já existe." });
       }
       console.error("Erro ao cadastrar sala:", error);
-      res.status(500).json({ error: "Erro interno do servidor ao cadastrar sala." });
+      res
+        .status(500)
+        .json({ error: "Erro interno do servidor ao cadastrar sala." });
     }
   }
 
@@ -45,63 +47,77 @@ module.exports = class salaController {
       res.status(200).json({ salas: results });
     } catch (error) {
       console.error("Erro ao obter salas:", error);
-      res.status(500).json({ error: "Erro interno do servidor ao obter salas." });
+      res
+        .status(500)
+        .json({ error: "Erro interno do servidor ao obter salas." });
     }
   }
 
   // Listar salas disponíveis por data (Já estava em async/await)
-static async getSalasDisponiveisPorData(req, res) {
-  const { data } = req.query;
-  if (!data) {
-    return res.status(400).json({ error: "A data é obrigatória (formato: YYYY-MM-DD)" });
-  }
-
-  try {
-    // Total de períodos existentes
-    const totalPeriodosResult = await queryAsync("SELECT COUNT(*) AS total FROM periodo");
-    const totalPeriodos = totalPeriodosResult[0].total;
-
-    // Buscar todas as salas
-    const salas = await queryAsync("SELECT * FROM sala");
-
-    // Buscar quantos períodos cada sala já possui reservados na data
-    const reservas = await queryAsync(`
-      SELECT fk_id_sala, COUNT(DISTINCT fk_id_periodo) AS periodos_ocupados
-      FROM reserva
-      WHERE ? BETWEEN data_inicio AND data_fim
-      GROUP BY fk_id_sala
-    `, [data]);
-
-    //  Criar mapa de reservas
-    const mapaReservas = {};
-    reservas.forEach(r => {
-      mapaReservas[r.fk_id_sala] = r.periodos_ocupados;
-    });
-
-    //  Filtrar salas que ainda possuem pelo menos 1 período livre
-    const salasDisponiveis = salas.filter(sala => {
-      const ocupados = mapaReservas[sala.id_sala] || 0;
-      return ocupados < totalPeriodos;
-    });
-
-    if (salasDisponiveis.length === 0) {
-      return res.status(404).json({ message: "Nenhuma sala disponível nesta data." });
+  static async getSalasDisponiveisPorData(req, res) {
+    const { data } = req.query;
+    if (!data) {
+      return res
+        .status(400)
+        .json({ error: "A data é obrigatória (formato: YYYY-MM-DD)" });
     }
 
-    // Agrupar por bloco
-    const salasPorBloco = {};
-    salasDisponiveis.forEach(sala => {
-      if (!salasPorBloco[sala.bloco]) salasPorBloco[sala.bloco] = [];
-      salasPorBloco[sala.bloco].push(sala);
-    });
+    try {
+      // Total de períodos existentes
+      const totalPeriodosResult = await queryAsync(
+        "SELECT COUNT(*) AS total FROM periodo"
+      );
+      const totalPeriodos = totalPeriodosResult[0].total;
 
-    res.status(200).json({ data, salasDisponiveis: salasPorBloco });
+      // Buscar todas as salas
+      const salas = await queryAsync("SELECT * FROM sala");
 
-  } catch (error) {
-    console.error("Erro ao buscar salas disponíveis:", error);
-    res.status(500).json({ error: "Erro interno do servidor ao buscar salas disponíveis." });
+      // Buscar quantos períodos cada sala já possui reservados na data
+      const reservas = await queryAsync(
+        `
+       SELECT fk_id_sala, COUNT(DISTINCT fk_id_periodo) AS periodos_ocupados
+       FROM reserva
+       WHERE dia = ?
+      GROUP BY fk_id_sala
+`,
+        [data]
+      );
+
+      //  Criar mapa de reservas
+      const mapaReservas = {};
+      reservas.forEach((r) => {
+        mapaReservas[r.fk_id_sala] = r.periodos_ocupados;
+      });
+
+      //  Filtrar salas que ainda possuem pelo menos 1 período livre
+      const salasDisponiveis = salas.filter((sala) => {
+        const ocupados = mapaReservas[sala.id_sala] || 0;
+        return ocupados < totalPeriodos;
+      });
+
+      if (salasDisponiveis.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "Nenhuma sala disponível nesta data." });
+      }
+
+      // Agrupar por bloco
+      const salasPorBloco = {};
+      salasDisponiveis.forEach((sala) => {
+        if (!salasPorBloco[sala.bloco]) salasPorBloco[sala.bloco] = [];
+        salasPorBloco[sala.bloco].push(sala);
+      });
+
+      res.status(200).json({ data, salasDisponiveis: salasPorBloco });
+    } catch (error) {
+      console.error("Erro ao buscar salas disponíveis:", error);
+      res
+        .status(500)
+        .json({
+          error: "Erro interno do servidor ao buscar salas disponíveis.",
+        });
+    }
   }
-}
 
   // Buscar sala por número (Refatorado para async/await)
   static async getSalaById(req, res) {
@@ -120,7 +136,9 @@ static async getSalasDisponiveisPorData(req, res) {
       });
     } catch (error) {
       console.error("Erro ao obter sala:", error);
-      res.status(500).json({ error: "Erro interno do servidor ao obter sala." });
+      res
+        .status(500)
+        .json({ error: "Erro interno do servidor ao obter sala." });
     }
   }
 
@@ -132,7 +150,9 @@ static async getSalasDisponiveisPorData(req, res) {
       const result = await queryAsync(query, [bloco]);
 
       if (result.length === 0) {
-        return res.status(404).json({ message: `Nenhuma sala encontrada para o bloco ${bloco}.` });
+        return res
+          .status(404)
+          .json({ message: `Nenhuma sala encontrada para o bloco ${bloco}.` });
       }
 
       res.status(200).json({
@@ -163,16 +183,25 @@ static async getSalasDisponiveisPorData(req, res) {
       }
 
       const updateQuery = `UPDATE sala SET descricao = ?, capacidade = ?, bloco = ? WHERE numero = ?`;
-      const updateResult = await queryAsync(updateQuery, [descricao, capacidade, bloco, numero]);
+      const updateResult = await queryAsync(updateQuery, [
+        descricao,
+        capacidade,
+        bloco,
+        numero,
+      ]);
 
       if (updateResult.affectedRows === 0) {
-         return res.status(404).json({ error: "Sala não encontrada ou sem alterações." });
+        return res
+          .status(404)
+          .json({ error: "Sala não encontrada ou sem alterações." });
       }
 
       res.status(200).json({ message: "Sala atualizada com sucesso" });
     } catch (error) {
       console.error("Erro ao atualizar a sala:", error);
-      res.status(500).json({ error: "Erro interno do servidor ao atualizar a sala." });
+      res
+        .status(500)
+        .json({ error: "Erro interno do servidor ao atualizar a sala." });
     }
   }
 
@@ -199,7 +228,9 @@ static async getSalasDisponiveisPorData(req, res) {
       res.status(200).json({ message: "Sala excluída com sucesso" });
     } catch (error) {
       console.error("Erro ao deletar a sala:", error);
-      res.status(500).json({ error: "Erro interno do servidor ao deletar sala." });
+      res
+        .status(500)
+        .json({ error: "Erro interno do servidor ao deletar sala." });
     }
   }
 };

@@ -107,13 +107,13 @@ module.exports = class periodoController {
     const { data, idSala } = req.query;
   
     if (!data || !idSala) {
-      return res.status(400).json({ error: "Informe data e idSala" });
+      return res.status(400).json({ error: "Informe data e id da Sala" });
     }
   
     const queryPeriodos = `SELECT * FROM periodo`;
   
     try {
-      // 1️⃣ Buscar todos os períodos
+      // Buscar todos os períodos
       connect.query(queryPeriodos, (err, periodos) => {
         if (err) {
           console.error("Erro ao buscar períodos:", err);
@@ -124,13 +124,15 @@ module.exports = class periodoController {
           return res.status(404).json({ error: "Nenhum período encontrado" });
         }
   
-        // 2️⃣ Buscar reservas + nome do usuário
-        const queryReservas = `
-          SELECT r.fk_id_periodo, u.nome AS nome_usuario
-          FROM reserva r
-          JOIN user u ON r.fk_id_user = u.id_user
-          WHERE r.fk_id_sala = ?
-            AND ? BETWEEN r.data_inicio AND r.data_fim
+        //  Buscar reservas + nome do usuário
+        const queryReservas =   `
+        SELECT 
+          r.fk_id_periodo, 
+          u.nome AS nome_usuario
+        FROM reserva r
+        JOIN user u ON r.fk_id_user = u.id_user
+        WHERE r.fk_id_sala = ?
+          AND r.dia = ?;
         `;
   
         connect.query(queryReservas, [idSala, data], (err, reservas) => {
