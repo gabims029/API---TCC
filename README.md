@@ -38,6 +38,7 @@ DB_NAME=senai
 - **PUT /user/**: Atualiza os dados de um usuário.
 - **DELETE /user/:id**: Deleta um usuário.
 
+<<<<<<< HEAD
 ### Classroom Routes
 - **GET /salas/disponiveis**: Obtém as salas disponíveis para reserva (baseado na data).
 - **GET /sala/bloco/:bloco**: Obtém uma sala de aula pelo bloco.
@@ -62,3 +63,27 @@ DB_NAME=senai
 - **GET /periodo/:id**: Obtém um período específico pelo ID.
 - **PUT /periodo/:id**: Atualiza os dados de um período (somente para admin).
 - **DELETE /periodo/:id**: Deleta um período específico (somente para admin).
+=======
+### Sala Routes
+- **POST /sala/**: Cria uma nova sala de aula.
+- **GET /sala/**: Obtém todas as salas de aula.
+- **GET /sala/numero/:numero**: Obtém uma sala de aula pelo número.
+- **GET /sala/bloco/:bloco**: Obtém uma sala de aula pelo bloco.
+- **GET /salas/disponiveis**: Obtém as salas disponíveis em um data específica
+- **PUT /sala/**: Atualiza uma sala de aula.
+- **DELETE /sala/:numero**: Deleta uma sala de aula.
+
+### Reserva Routes
+- **POST /reserva/**: Cria uma reserva.
+- **GET /reserva/**: Obtém todos as reservas.
+- **GET /reserva/usuario/:id_user**: Obtém as reservas de um usuário específica pelo ID.
+- **GET /reserva/data/:data**: Obtém as resevas de uma data específica.
+- **DELETE /reserva/:id_reserva**: Deleta uma reserva.
+
+### Periodo Routes
+- **POST /periodo/**: Cria um novo período.
+- **GET /periodo/**: Obtém todos os períodos.
+- **GET /periodo/status**: Obtém os status dos períodos.
+- **GET /periodo/:id**: Obtém um período específica pelo ID.
+- **DELETE /periodo/:id**: Deleta um período.
+>>>>>>> 1aa39436216b5b20b90b64014bbd19540f162fa7
