@@ -38,7 +38,7 @@ DB_NAME=senai
 - **PUT /user/**: Atualiza os dados de um usuário.
 - **DELETE /user/:id**: Deleta um usuário.
 
-### Classroom Routes
+### Sala Routes
 - **POST /sala/**: Cria uma nova sala de aula.
 - **GET /sala/**: Obtém todas as salas de aula.
 - **GET /sala/numero/:numero**: Obtém uma sala de aula pelo número.
@@ -47,7 +47,7 @@ DB_NAME=senai
 - **PUT /sala/**: Atualiza uma sala de aula.
 - **DELETE /sala/:numero**: Deleta uma sala de aula.
 
-### Schedule Routes
+### Reserva Routes
 - **POST /reserva/**: Cria uma reserva.
 - **GET /reserva/**: Obtém todos as reservas.
 - **GET /reserva/usuario/:id_user**: Obtém as reservas de um usuário específica pelo ID.
