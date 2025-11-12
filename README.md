@@ -35,25 +35,28 @@ DB_NAME=senai
 - **POST /user/login**: Realiza login de um usuário.
 - **GET /user/**: Obtém todos os usuários.
 - **GET /user/:id**: Obtém um usuário pelo ID.
-- **PUT /user/:id**: Atualiza os dados de um usuário.
+- **PUT /user/**: Atualiza os dados de um usuário.
 - **DELETE /user/:id**: Deleta um usuário.
 
 ### Classroom Routes
-- **POST /classroom/**: Cria uma nova sala de aula.
-- **GET /classroom/**: Obtém todas as salas de aula.
-- **GET /classroom/:number**: Obtém uma sala de aula pelo número.
-- **PUT /classroom/**: Atualiza uma sala de aula.
-- **DELETE /classroom/:number**: Deleta uma sala de aula.
+- **POST /sala/**: Cria uma nova sala de aula.
+- **GET /sala/**: Obtém todas as salas de aula.
+- **GET /sala/numero/:numero**: Obtém uma sala de aula pelo número.
+- **GET /sala/bloco/:bloco**: Obtém uma sala de aula pelo bloco.
+- **GET /salas/disponiveis**: Obtém as salas disponíveis em um data específica
+- **PUT /sala/**: Atualiza uma sala de aula.
+- **DELETE /sala/:numero**: Deleta uma sala de aula.
 
 ### Schedule Routes
-- **POST /schedule/**: Cria um novo agendamento.
-- **GET /schedule/**: Obtém todos os agendamentos.
-- **GET /schedule/:id**: Obtém os agendamentos de uma sala de aula específica pelo ID.
-- **GET /schedule/ranges/:id**: Obtém os agendamentos de uma sala de aula específica em intervalos de tempo.
-- **DELETE /schedule/:id**: Deleta um agendamento.
+- **POST /reserva/**: Cria uma reserva.
+- **GET /reserva/**: Obtém todos as reservas.
+- **GET /reserva/usuario/:id_user**: Obtém as reservas de um usuário específica pelo ID.
+- **GET /reserva/data/:data**: Obtém as resevas de uma data específica.
+- **DELETE /reserva/:id_reserva**: Deleta uma reserva.
 
 ### Periodo Routes
-- **POST /periodo/**: Cria um novo periodo.
-- **GET /periodo/**: Obtém todos os periodos.
-- **GET /periodo/:id**: Obtém um periodo específica pelo ID.
-- **DELETE /periodo/:id**: Deleta um agendamento.
+- **POST /periodo/**: Cria um novo período.
+- **GET /periodo/**: Obtém todos os períodos.
+- **GET /periodo/status**: Obtém os status dos períodos.
+- **GET /periodo/:id**: Obtém um período específica pelo ID.
+- **DELETE /periodo/:id**: Deleta um período.
