@@ -31,29 +31,34 @@ DB_NAME=senai
 ## Rotas da API
 
 ### User Routes
-- **POST /user/**: Cria um novo usuário.
 - **POST /user/login**: Realiza login de um usuário.
+- **POST /user/**: Cria um novo usuário (somente para admin).
 - **GET /user/**: Obtém todos os usuários.
 - **GET /user/:id**: Obtém um usuário pelo ID.
-- **PUT /user/:id**: Atualiza os dados de um usuário.
+- **PUT /user/**: Atualiza os dados de um usuário.
 - **DELETE /user/:id**: Deleta um usuário.
 
 ### Classroom Routes
-- **POST /classroom/**: Cria uma nova sala de aula.
-- **GET /classroom/**: Obtém todas as salas de aula.
-- **GET /classroom/:number**: Obtém uma sala de aula pelo número.
-- **PUT /classroom/**: Atualiza uma sala de aula.
-- **DELETE /classroom/:number**: Deleta uma sala de aula.
+- **GET /salas/disponiveis**: Obtém as salas disponíveis para reserva (baseado na data).
+- **GET /sala/bloco/:bloco**: Obtém uma sala de aula pelo bloco.
+- **GET /sala/numero/:numero**: Obtém uma sala de aula pelo número.
+- **POST /sala/**: Cria uma nova sala de aula (somente para admin).
+- **GET /sala/**: Obtém todas as salas de aula.
+- **PUT /sala/**: Atualiza os dados de uma sala de aula (somente para admin).
+- **DELETE /sala/:numero**: Deleta uma sala de aula pelo número (somente para admin).
 
 ### Schedule Routes
-- **POST /schedule/**: Cria um novo agendamento.
-- **GET /schedule/**: Obtém todos os agendamentos.
-- **GET /schedule/:id**: Obtém os agendamentos de uma sala de aula específica pelo ID.
-- **GET /schedule/ranges/:id**: Obtém os agendamentos de uma sala de aula específica em intervalos de tempo.
-- **DELETE /schedule/:id**: Deleta um agendamento.
+- **POST /reserva/**: Cria um novo agendamento de reserva.
+- **GET /reserva/**: Obtém todos os agendamentos de reserva.
+- **GET /reserva/usuario/:id_user**: Obtém todos os agendamentos de um usuário específico pelo ID.
+- **GET /reservas/data/:data**: Obtém os agendamentos para uma data específica.
+- **GET /reserva/periodo/:id_reserva/:id_periodo**: Deleta um agendamento de reserva de um período específico.
+- **PUT /reserva/:id_reserva**: Atualiza os dados de um agendamento de reserva.
+- **DELETE /reserva/:id_reserva**: Deleta um agendamento de reserva.
 
 ### Periodo Routes
-- **POST /periodo/**: Cria um novo periodo.
-- **GET /periodo/**: Obtém todos os periodos.
-- **GET /periodo/:id**: Obtém um periodo específica pelo ID.
-- **DELETE /periodo/:id**: Deleta um agendamento.
+- **POST /periodo/**: Cria um novo período (somente para admin).
+- **GET /periodo/**: Obtém todos os períodos.
+- **GET /periodo/:id**: Obtém um período específico pelo ID.
+- **PUT /periodo/:id**: Atualiza os dados de um período (somente para admin).
+- **DELETE /periodo/:id**: Deleta um período específico (somente para admin).

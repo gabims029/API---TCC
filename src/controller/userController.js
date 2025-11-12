@@ -10,7 +10,7 @@ module.exports = class userController {
   // Criar usuário
   static async createUser(req, res) {
     const { cpf, email, senha, nome, tipo } = req.body;
-    // const fotoBuffer = req.file ? req.file.buffer : null; // captura foto
+    
     const validationError = validateUser(req.body);
     if (validationError) return res.status(400).json(validationError);
 
@@ -51,14 +51,11 @@ module.exports = class userController {
   static async getAllUsers(req, res) {
     connect.query("SELECT * FROM user", (err, results) => {
       if (err)
-        return res.status(500).json({ error: "Erro interno do servidor" }); // converte fotos para base64
+        return res.status(500).json({ error: "Erro interno do servidor" }); 
 
-      const users = results.map((user) => ({
-        ...user,
-        foto: user.foto
-          ? `data:image/jpeg;base64,${user.foto.toString("base64")}`
-          : null,
-      }));
+        const users = results.map((user) => ({
+          ...user,
+        }));
 
       return res
         .status(200)
@@ -78,16 +75,13 @@ module.exports = class userController {
           return res.status(404).json({ error: "Usuário não encontrado" });
 
         const user = results[0];
-        user.foto = user.foto
-          ? `data:image/jpeg;base64,${user.foto.toString("base64")}`
-          : null;
 
         return res
           .status(200)
           .json({ message: `Obtendo usuário com id: ${userId}`, user });
       }
     );
-  } // Atualizar usuário (incluindo foto)
+  };
 
   static async updateUser(req, res) {
     const {
@@ -99,9 +93,6 @@ module.exports = class userController {
       cpf,
     } = req.body;
 
-    //  Captura a foto e o tipo do Multer (req.file)
-    const fotoBuffer = req.file?.buffer || null;
-    const fotoTipo = req.file?.mimetype || null;
 
     const idUsuarioLogado = req.userId;
 
@@ -149,13 +140,7 @@ module.exports = class userController {
         setClauses.push("senha = ?");
         values.push(hashParaSalvar);
 
-        //  Se houver FOTO, inclui o buffer e o tipo
-        if (fotoBuffer) {
-          setClauses.push("foto = ?");
-          values.push(fotoBuffer);
-          setClauses.push("foto_tipo = ?");
-          values.push(fotoTipo);
-        }
+        
         //  Executa a Query
         const queryUpdate = `UPDATE user SET ${setClauses.join(", ")} WHERE id_user = ?`;
         values.push(id); // Adiciona o ID no final para a cláusula WHERE
@@ -175,28 +160,7 @@ module.exports = class userController {
     }
   }
 
-  //  getUserPhoto para usar o foto_tipo
-  static async getUserPhoto(req, res) {
-    const userId = req.params.id;
-    connect.query(
-      "SELECT foto, foto_tipo FROM user WHERE id_user = ?", // Seleciona o tipo também
-      [userId],
-      (err, results) => {
-        if (err || results.length === 0 || !results[0].foto) {
-          return res.status(404).send("Foto não encontrada");
-        }
-        const fotoBuffer = results[0].foto;
-        // Usa o tipo salvo no banco, ou fallback para jpeg
-        const contentType = results[0].foto_tipo || "image/jpeg";
-
-        res.writeHead(200, {
-          "Content-Type": contentType, // <--- Usa o tipo dinâmico
-          "Content-Length": fotoBuffer.length,
-        });
-        res.end(fotoBuffer);
-      }
-    );
-  }
+  
 
   // Deletar usuário
   static async deleteUser(req, res) {

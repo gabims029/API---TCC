@@ -5,10 +5,8 @@ const periodoController = require("../controller/periodoController");
 const reservaController = require("../controller/reservaController");
 const authorizeRole = require("../services/authorizeRole");
 const verifyJWT = require("../services/verifyJWT");
-const upload = require("../middleware/upload"); // importando o multer
 
 // Usuários (Routes consolidadas)
-router.post("/register", upload.single("foto"), userController.createUser);
 router.post("/user/login", userController.postLogin);
 router.post(
   "/user/",
@@ -20,8 +18,6 @@ router.get("/user/", verifyJWT, userController.getAllUsers);
 router.get("/user/:id", verifyJWT, userController.getUserById);
 router.put("/user/", verifyJWT, userController.updateUser);
 router.delete("/user/:id", verifyJWT, userController.deleteUser);
-// router.put("/user/", verifyJWT, upload.single("foto"), userController.updateUser);
-router.get("/user/photo/:id", userController.getUserPhoto);
 
 // A rota mais específica deve vir primeiro para evitar conflitos
 router.get(
