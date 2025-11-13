@@ -1,15 +1,13 @@
-const connect = require("../db/connect");
-module.exports = function testConnect() {
+const connect = require("./connect");
+
+module.exports = async function testConnect() {
   try {
-    const query = `SELECT 'Conexão bem-sucedida' AS Mensagem`;
-    connect.query(query, function (err) {
-      if (err) {
-        console.log("Conexão não realizada: " + err);
-        return;
-      }
-      console.log("Conexão realizada com Mysql!");
-    });
-  } catch (error) {
-    console.error("Erro ao executar a consulta:", error);
+    const [rows] = await connect.query(
+      "SELECT 'Conexão bem-sucedida' AS Mensagem"
+    );
+
+    console.log("Conexão realizada com MySQL:", rows[0].Mensagem);
+  } catch (err) {
+    console.error("Erro ao executar a consulta:", err);
   }
 };
