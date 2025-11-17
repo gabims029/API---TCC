@@ -6,7 +6,7 @@ function getDiaDaSemana(dateString) {
   const date = new Date(dateString + "T00:00:00"); // Garante que a data é tratada no início do dia
 
   // Mapeamento direto de getDay() (0=Dom, 1=Seg, ..., 6=Sáb) para a abreviação
-  const diasAbreviados = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const diasAbreviados = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
   const diaAbreviado = diasAbreviados[date.getDay()];
 

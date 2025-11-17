@@ -207,30 +207,39 @@ module.exports = class salaController {
 
   // Deletar sala (Refatorado para async/await)
   static async deleteSala(req, res) {
-    const salaId = req.params.numero;
+    const salaId = req.params.numero; // ID da sala
     try {
-      const checkReservasQuery = `SELECT * FROM reserva WHERE fk_id_sala = ?`;
-      const reservas = await queryAsync(checkReservasQuery, [salaId]);
+        // Verifica se há reservas associadas à sala
+        const checkReservasQuery = `
+            SELECT * FROM reserva WHERE fk_id_sala = ?;
+        `;
+        const reservas = await queryAsync(checkReservasQuery, [salaId]);
 
-      if (reservas.length > 0) {
-        return res.status(400).json({
-          error: "Não é possível excluir a sala, pois há reservas associadas.",
-        });
-      }
+        // Se houver reservas associadas, não permitir a exclusão
+        if (reservas.length > 0) {
+            return res.status(400).json({
+                error: "Não é possível excluir a sala, pois há reservas associadas.",
+                reservas: reservas, // Você pode adicionar as reservas no retorno para fornecer mais detalhes
+            });
+        }
 
-      const deleteQuery = `DELETE FROM sala WHERE numero = ?`;
-      const results = await queryAsync(deleteQuery, [salaId]);
+        // Se não houver reservas, deleta a sala
+        const deleteQuery = `
+            DELETE FROM sala WHERE numero = ?;
+        `;
+        const results = await queryAsync(deleteQuery, [salaId]);
 
-      if (results.affectedRows === 0) {
-        return res.status(404).json({ error: "Sala não encontrada" });
-      }
+        // Caso não tenha encontrado a sala a ser deletada
+        if (results.affectedRows === 0) {
+            return res.status(404).json({ error: "Sala não encontrada." });
+        }
 
-      res.status(200).json({ message: "Sala excluída com sucesso" });
+        // Deleta a sala com sucesso
+        res.status(200).json({ message: "Sala excluída com sucesso." });
     } catch (error) {
-      console.error("Erro ao deletar a sala:", error);
-      res
-        .status(500)
-        .json({ error: "Erro interno do servidor ao deletar sala." });
+        console.error("Erro ao deletar a sala:", error);
+        res.status(500).json({ error: "Erro interno do servidor ao deletar sala." });
     }
-  }
+}
+
 };
