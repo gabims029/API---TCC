@@ -104,7 +104,14 @@ CREATE TABLE `user` (
 INSERT INTO `user` VALUES
 (1,'Administrador','admin@docente.senai.br',
 '$2b$10$cUCNfB8zeLxEfopVSyBtIOhmUR6vtZrvIMShv.VNHqKWmiE1.AaoK',
-'12345678909','Admin');
+'12345678909','Admin'),
+(2, 'teste', 'teste@docente.senai.br',
+'$2b$10$BSVb7srFNTSchbqdCLis1O.8z6krNgApDGNiuNCMy9Y3ZwxEcViDm',
+'12345678909', 'comum'),
+(3, 'testeAdmin', 'testeAdmini@docente.senai.br',
+'$2b$10$BSVb7srFNTSchbqdCLis1O.8z6krNgApDGNiuNCMy9Y3ZwxEcViDm',
+'01234567890', 'Admin');
+
 
 DROP TABLE IF EXISTS `reserva`;
 CREATE TABLE `reserva` (
