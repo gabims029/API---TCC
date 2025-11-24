@@ -132,7 +132,7 @@ static async createReserva(req, res) {
 
         //  Sábado não pode reservar período >= 15
         const diaSemana = getDiaDaSemana(dataFormatada);
-        if (diaSemana === "Sab" && periodo > 15) {
+        if (diaSemana === "Sab" && periodo > 10) {
           errosReservas.push({
             data: dataFormatada,
             periodo,
