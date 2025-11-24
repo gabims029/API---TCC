@@ -9,4 +9,11 @@ const pool = mysql.createPool({
   charset: 'utf8mb4'
 });
 
+// Força o MySQL sempre usar UTF8MB4
+pool.on('connection', function (connection) {
+  connection.query("SET NAMES utf8mb4");
+  connection.query("SET CHARACTER SET utf8mb4");
+  connection.query("SET character_set_connection=utf8mb4");
+});
+
 module.exports = pool;
